@@ -52,29 +52,25 @@ def flattenDict(inDict, pre=None, values=True):
     if isinstance(inDict, dict):
         for key, value in inDict.items():
             if isinstance(value, dict):
-                for d in flattenDict(value, pre + [key], values):
-                    yield d
+                yield from flattenDict(value, pre + [key], values)
             if isinstance(value,list):
                 for listItem in value:
-                    for i in flattenDict(listItem,pre + [key],values):
-                        yield i
-            else:
-                if pre:
-                    if values:
-                        if isinstance(value, str):
-                            yield '.'.join(pre) + '.' + key + '=' + str(value)
-                        elif value is None:
-                            yield '.'.join(pre) + '.' + key + '=None'
-                    else:
-                        yield '.'.join(pre) + '.' + key
+                    yield from flattenDict(listItem,pre + [key],values)
+            elif pre:
+                if values:
+                    if isinstance(value, str):
+                        yield '.'.join(pre) + '.' + key + '=' + str(value)
+                    elif value is None:
+                        yield '.'.join(pre) + '.' + key + '=None'
                 else:
-                    if values:
-                        if isinstance(value, str):
-                            yield key + '=' + str(value)
-                        elif value is None:
-                            yield key + '=None'
-                    else:
-                        yield key
+                    yield '.'.join(pre) + '.' + key
+            elif values:
+                if isinstance(value, str):
+                    yield f'{key}={str(value)}'
+                elif value is None:
+                    yield f'{key}=None'
+            else:
+                yield key
     else:
         yield '-'.join(pre) + '.' + inDict
 
@@ -117,7 +113,7 @@ def main():
                 mozmsg.severity = 'INFO'
                 mozmsg.summary = 'google authentication: '
 
-                details=dict()
+                details = {}
                 for keyValue in flattenDict(i):
                     # change key/values like:
                     # actor.email=someone@mozilla.com

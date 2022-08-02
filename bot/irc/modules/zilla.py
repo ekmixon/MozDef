@@ -39,9 +39,14 @@ class Zilla(Module):
             self.interval = 9999999
             self.channel = '#test'
 
-        self._bugzilla = bugzilla.Bugzilla(url=self.url + 'rest/', api_key=self.api_key)
+        self._bugzilla = bugzilla.Bugzilla(
+            url=f'{self.url}rest/', api_key=self.api_key
+        )
 
-        _log.info("zilla module initialized for {}, pooling every {} seconds.".format(self.url, self.interval))
+
+        _log.info(
+            f"zilla module initialized for {self.url}, pooling every {self.interval} seconds."
+        )
 
     def loop(self):
         last = 0
@@ -54,29 +59,29 @@ class Zilla(Module):
             time.sleep(1)
 
     def bugzilla_search(self):
-            config = self.controller.config
-            try:
-                terms = json.loads(config.get('zilla', 'search_terms'))
-            except AttributeError:
-                _log.warning("zilla could not load search terms")
-                return
+        config = self.controller.config
+        try:
+            terms = json.loads(config.get('zilla', 'search_terms'))
+        except AttributeError:
+            _log.warning("zilla could not load search terms")
+            return
 
-            for search_group in terms:
-                try:
-                    res = self._bugzilla.search_bugs(search_group)
-                except Exception as e:
-                    _log.error('Error querying bugzilla' + str(e))
-                    return
-                for bug in res['bugs']:
-                    bugsummary = bug['summary'].encode('utf-8', 'replace')
-                    self.controller.client.msg(
-                        self.channel,
-                        "\x037\x02WARNING\x03\x02 \x032\x02NEW\x03\x02 bug: {url}{bugid} {summary}".format(
-                            summary=bugsummary,
-                            url=self.url,
-                            bugid=bug['id']
-                        )
+        for search_group in terms:
+            try:
+                res = self._bugzilla.search_bugs(search_group)
+            except Exception as e:
+                _log.error(f'Error querying bugzilla{str(e)}')
+                return
+            for bug in res['bugs']:
+                bugsummary = bug['summary'].encode('utf-8', 'replace')
+                self.controller.client.msg(
+                    self.channel,
+                    "\x037\x02WARNING\x03\x02 \x032\x02NEW\x03\x02 bug: {url}{bugid} {summary}".format(
+                        summary=bugsummary,
+                        url=self.url,
+                        bugid=bug['id']
                     )
+                )
 
     def start(self, *args, **kwargs):
         super(Zilla, self).start(*args, **kwargs)

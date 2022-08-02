@@ -22,10 +22,9 @@ class message(object):
         # check for category like 'ldap' and rename the tls field
         if key_exists('category', message):
             data = message.get('category')
-            if data == 'ldap':
-                if key_exists('details.tls', message):
-                    message['details']['tls_encrypted'] = message['details']['tls']
-                    del(message['details']['tls'])
+            if data == 'ldap' and key_exists('details.tls', message):
+                message['details']['tls_encrypted'] = message['details']['tls']
+                del(message['details']['tls'])
 
         if 'source' not in message:
             message['source'] = 'ldap'

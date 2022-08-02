@@ -60,24 +60,22 @@ class AlertWatchList(AlertTask):
         # the event.
         if 'details' not in ev:
             return None
-        if 'details' in ev:
-            if 'sourceipaddress' in ev['details']:
-                sourceipaddress = ev['details']['sourceipaddress']
-                source_data = 'from {}'.format(sourceipaddress)
-            if 'username' in ev['details'] or 'originaluser' in ev['details'] or 'user' in ev['details']:
-                if 'username' in ev['details']:
-                    user = ev['details']['username']
-                    user_data = 'by {}'.format(user)
-                elif 'originaluser' in ev['details']:
-                    user = ev['details']['originaluser']
-                    user_data = 'by {}'.format(user)
-                elif 'user' in ev['details']:
-                    user = ev['details']['user']
-                    user_data = 'by {}'.format(user)
-            if 'hostname' in ev:
-                hostname = ev['hostname']
+        if 'sourceipaddress' in ev['details']:
+            sourceipaddress = ev['details']['sourceipaddress']
+            source_data = f'from {sourceipaddress}'
+        if 'username' in ev['details'] or 'originaluser' in ev['details'] or 'user' in ev['details']:
+            if 'username' in ev['details']:
+                user = ev['details']['username']
+            elif 'originaluser' in ev['details']:
+                user = ev['details']['originaluser']
             else:
-                return None
+                user = ev['details']['user']
+            user_data = f'by {user}'
+        if 'hostname' in ev:
+            hostname = ev['hostname']
+        else:
+            return None
 
-        summary = 'Watchlist term {} detected {} {} on {}'.format(self.watchterm, user_data, source_data, hostname)
+        summary = f'Watchlist term {self.watchterm} detected {user_data} {source_data} on {hostname}'
+
         return self.createAlertDict(summary, category, tags, [event], severity)

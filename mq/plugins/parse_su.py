@@ -21,16 +21,17 @@ class message(object):
 
         self.session_regexp = re.compile(r'^pam_unix\(su(?:-l)?\:session\)\: session (?P<status>\w+) for user (?P<username>\w+)(?: (?:by (?:(?P<originuser>\w+))?\(uid\=(?P<uid>[0-9]+)\)?)?)?$')
 
-        if 'details' in message:
-            if 'program' in message['details']:
-                if message['details']['program'] == 'su':
-                    msg_unparsed = message['summary']
-                    if msg_unparsed.startswith('pam_unix'):
-                        session_search = re.search(self.session_regexp, msg_unparsed)
-                        if session_search:
-                            message['details']['originuser'] = session_search.group('originuser')
-                            message['details']['status'] = session_search.group('status')
-                            message['details']['uid'] = session_search.group('uid')
-                            message['details']['username'] = session_search.group('username')
+        if (
+            'details' in message
+            and 'program' in message['details']
+            and message['details']['program'] == 'su'
+        ):
+            msg_unparsed = message['summary']
+            if msg_unparsed.startswith('pam_unix'):
+                if session_search := re.search(self.session_regexp, msg_unparsed):
+                    message['details']['originuser'] = session_search['originuser']
+                    message['details']['status'] = session_search['status']
+                    message['details']['uid'] = session_search['uid']
+                    message['details']['username'] = session_search['username']
 
         return (message, metadata)

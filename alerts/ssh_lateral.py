@@ -90,12 +90,12 @@ class SshLateral(AlertTask):
     # Returns true if the user, host, and source IP fall into an exception
     # listed in the configuration file.
     def exception_check(self, user, host, srcip):
-        for x in self._config['exceptions']:
-            if re.match(x[0], user) is not None and \
-                    re.match(x[1], host) is not None and \
-                    netaddr.IPAddress(srcip) in netaddr.IPNetwork(x[2]):
-                return True
-        return False
+        return any(
+            re.match(x[0], user) is not None
+            and re.match(x[1], host) is not None
+            and netaddr.IPAddress(srcip) in netaddr.IPNetwork(x[2])
+            for x in self._config['exceptions']
+        )
 
     def onAggregation(self, aggreg):
         category = 'session'
@@ -107,11 +107,10 @@ class SshLateral(AlertTask):
         if len(aggreg['events']) == 0:
             return None
         srchost = aggreg['events'][0]['_source']['hostname']
-        srcmatch = False
-        for x in self._config['hostmustmatch']:
-            if re.match(x, srchost) is not None:
-                srcmatch = True
-                break
+        srcmatch = any(
+            re.match(x, srchost) is not None for x in self._config['hostmustmatch']
+        )
+
         if not srcmatch:
             return None
         for x in self._config['hostmustnotmatch']:
@@ -126,38 +125,33 @@ class SshLateral(AlertTask):
         for x in aggreg['events']:
             m = re.match(r'Accepted publickey for (\S+) from (\S+).*', x['_source']['summary'])
             if m is not None and len(m.groups()) == 2:
-                ipaddr = netaddr.IPAddress(m.group(2))
+                ipaddr = netaddr.IPAddress(m[2])
                 for y in self._config['alertifsource']:
                     if ipaddr in netaddr.IPNetwork(y):
-                        # Validate it's not excepted in the IP negation list
-                        notalertnetwork = False
-                        for z in self._config['notalertifsource']:
-                            if ipaddr in netaddr.IPNetwork(z):
-                                notalertnetwork = True
-                                break
+                        notalertnetwork = any(
+                            ipaddr in netaddr.IPNetwork(z)
+                            for z in self._config['notalertifsource']
+                        )
+
                         if notalertnetwork:
                             continue
-                        # Check our user ignore list
-                        skipuser = False
-                        for z in self._config['ignoreusers']:
-                            if re.match(z, m.group(1)):
-                                skipuser = True
-                                break
+                        skipuser = any(re.match(z, m[1]) for z in self._config['ignoreusers'])
                         if skipuser:
                             continue
                         # Check our exception list
-                        if self.exception_check(m.group(1), srchost, m.group(2)):
+                        if self.exception_check(m[1], srchost, m[2]):
                             continue
-                        source_ips.append(m.group(2))
-                        users.append(m.group(1))
+                        source_ips.append(m[2])
+                        users.append(m[1])
                         candidates.append(x)
-        if len(candidates) == 0:
+        if not candidates:
             return None
 
-        src_hosts_info = []
-        for source_ip in source_ips:
-            src_hosts_info.append(add_hostname_to_ip(source_ip, '{0} ({1})'))
+        src_hosts_info = [
+            add_hostname_to_ip(source_ip, '{0} ({1})') for source_ip in source_ips
+        ]
 
-        summary = 'SSH lateral movement outside policy: access to {} from {} as {}'.format(srchost, ','.join(src_hosts_info), ','.join(users))
+        summary = f"SSH lateral movement outside policy: access to {srchost} from {','.join(src_hosts_info)} as {','.join(users)}"
+
 
         return self.createAlertDict(summary, category, tags, aggreg['events'], severity)

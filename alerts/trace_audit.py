@@ -32,7 +32,7 @@ class TraceAudit(AlertTask):
         severity = 'WARNING'
         tags = ['audit']
 
-        hosts = set([event['_source']['hostname'] for event in aggreg['events']])
+        hosts = {event['_source']['hostname'] for event in aggreg['events']}
 
         summary = '{0} instances of Strace or Ptrace executed by {1} on {2}'.format(
             aggreg['count'],

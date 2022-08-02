@@ -19,7 +19,7 @@ from mozdef_util.utilities.logger import logger
 
 def esConnect(conn):
     '''open or re-open a connection to elastic search'''
-    return ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+    return ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
 
 
 def isJVMMemoryHigh():
@@ -38,10 +38,10 @@ def isJVMMemoryHigh():
             if jvmused > options.jvmlimit:
                 logger.info('{0}: cpu {1}%  jvm {2}% load average: {3} recommending cache clear'.format(nodename, cpuusage, jvmused, loadaverage))
                 return True
-        return False
     else:
         logger.error(r)
-        return False
+
+    return False
 
 
 def clearESCache():
@@ -85,7 +85,13 @@ def main():
 
 def initConfig():
     # elastic search servers
-    options.esservers = list('{0}'.format(s) for s in getConfig('esservers', 'http://localhost:9200', options.configfile).split(','))
+    options.esservers = [
+        '{0}'.format(s)
+        for s in getConfig(
+            'esservers', 'http://localhost:9200', options.configfile
+        ).split(',')
+    ]
+
 
     # memory watermark, set to 90 (percent) by default
     options.jvmlimit = getConfig('jvmlimit', 90, options.configfile)

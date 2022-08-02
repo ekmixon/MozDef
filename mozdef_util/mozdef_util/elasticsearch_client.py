@@ -30,7 +30,7 @@ class ElasticsearchInvalidIndex(Exception):
         self.index_name = index_name
 
     def __str__(self):
-        return "Invalid index: " + str(self.index_name)
+        return f"Invalid index: {str(self.index_name)}"
 
 
 class ElasticsearchClient():
@@ -47,9 +47,7 @@ class ElasticsearchClient():
         return self.es_connection.indices.open(index=index_name)
 
     def delete_index(self, index_name, ignore_fail=False):
-        ignore_codes = []
-        if ignore_fail is True:
-            ignore_codes = [400, 404]
+        ignore_codes = [400, 404] if ignore_fail is True else []
         self.es_connection.indices.delete(index=index_name, ignore=ignore_codes)
 
     def get_indices(self):
@@ -89,8 +87,10 @@ class ElasticsearchClient():
                 'remove': {'index': '*', 'alias': alias_name}
             })
 
-        for index in indices:
-            actions.append({'add': {'index': index, 'alias': alias_name}})
+        actions.extend(
+            {'add': {'index': index, 'alias': alias_name}} for index in indices
+        )
+
         self.es_connection.indices.update_aliases(dict(actions=actions))
 
     def get_alias(self, alias_name):
@@ -109,8 +109,7 @@ class ElasticsearchClient():
         except NotFoundError:
             raise ElasticsearchInvalidIndex(indices)
 
-        result_set = SimpleResults(results)
-        return result_set
+        return SimpleResults(results)
 
     def aggregated_search(self, search_query, indices, aggregations, size, request_timeout):
         search_obj = Search(using=self.es_connection, index=indices).params(size=size, request_timeout=request_timeout)
@@ -119,8 +118,7 @@ class ElasticsearchClient():
             query_obj.aggs.bucket(name=aggregation.to_dict()['terms']['field'], agg_type=aggregation)
         results = query_obj.execute()
 
-        result_set = AggregatedResults(results)
-        return result_set
+        return AggregatedResults(results)
 
     def save_documents(self, documents):
         # ES library still requires _type to be set
@@ -129,7 +127,7 @@ class ElasticsearchClient():
         try:
             bulk(self.es_connection, documents)
         except BulkIndexError as e:
-            logger.error("Error bulk indexing: " + str(e))
+            logger.error(f"Error bulk indexing: {str(e)}")
 
     def finish_bulk(self):
         self.bulk_queue.flush()
@@ -175,10 +173,7 @@ class ElasticsearchClient():
         search_query = SearchQuery()
         search_query.add_must(id_match)
         results = search_query.execute(self, indices=indices)
-        if len(results['hits']) == 0:
-            return None
-        else:
-            return results['hits'][0]
+        return None if len(results['hits']) == 0 else results['hits'][0]
 
     def get_alert_by_id(self, alert_id):
         return self.get_object_by_id(alert_id, ['alerts'])

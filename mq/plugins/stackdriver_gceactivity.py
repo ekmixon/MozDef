@@ -39,9 +39,11 @@ class message(object):
 
         event = message["details"]
 
-        newmessage = dict()
+        newmessage = {
+            "receivedtimestamp": toUTC(message["receivedtimestamp"]).isoformat()
+        }
 
-        newmessage["receivedtimestamp"] = toUTC(message["receivedtimestamp"]).isoformat()
+
         newmessage["timestamp"] = toUTC(event["timestamp"]).isoformat()
         newmessage["utctimestamp"] = toUTC(event["timestamp"]).isoformat()
         newmessage["category"] = message["category"]

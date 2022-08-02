@@ -87,7 +87,7 @@ def alert(
     this function returns `None`.
     '''
 
-    relevant_es = sorted(from_es, key=attrgetter('lastaction'), reverse=True)[0:1]
+    relevant_es = sorted(from_es, key=attrgetter('lastaction'), reverse=True)[:1]
     all_evts = sorted(from_evts, key=attrgetter('lastaction'))
     locs_to_consider = relevant_es + all_evts
 
@@ -105,10 +105,7 @@ def alert(
         if not _travel_possible(o, d)
     ]
 
-    if len(hops) == 0:
-        return None
-
-    return Alert(username, hops, severity, [])
+    return Alert(username, hops, severity, []) if hops else None
 
 
 def summary(alert: Alert) -> str:
@@ -131,17 +128,12 @@ def summary(alert: Alert) -> str:
     times = ['{:.2f} minutes'.format(abs(t) / 60.0) for t in _t]
 
     hops = [
-        '{},{} then {},{} ({} in {})'.format(
-            alert.hops[i].origin.city,
-            alert.hops[i].origin.country,
-            alert.hops[i].destination.city,
-            alert.hops[i].destination.country,
-            dists[i],
-            times[i])
+        f'{alert.hops[i].origin.city},{alert.hops[i].origin.country} then {alert.hops[i].destination.city},{alert.hops[i].destination.country} ({dists[i]} in {times[i]})'
         for i in range(len(alert.hops))
     ]
 
-    return '{} seen in {}'.format(alert.username, '; '.join(hops))
+
+    return f"{alert.username} seen in {'; '.join(hops)}"
 
 
 def _coordinates(orig: Origin) -> Coordinates:
@@ -156,4 +148,5 @@ def _to_origin(loc: Locality) -> Origin:
         loc.latitude,
         loc.longitude,
         loc.lastaction,
-        '{},{}'.format(loc.latitude, loc.longitude))
+        f'{loc.latitude},{loc.longitude}',
+    )

@@ -69,7 +69,7 @@ def writeEsClusterStats(data, mongo):
 
 
 def getEsNodesStats():
-    r = requests.get(options.esservers[0] + '/_nodes/stats/os,jvm,fs')
+    r = requests.get(f'{options.esservers[0]}/_nodes/stats/os,jvm,fs')
     jsonobj = r.json()
     results = []
     for nodeid in jsonobj['nodes']:
@@ -101,12 +101,8 @@ def writeEsNodesStats(data, mongo):
 
 
 def getEsHotThreads():
-    r = requests.get(options.esservers[0] + '/_nodes/hot_threads')
-    results = []
-    for line in r.text.split('\n'):
-        if 'cpu usage' in line:
-            results.append(line)
-    return results
+    r = requests.get(f'{options.esservers[0]}/_nodes/hot_threads')
+    return [line for line in r.text.split('\n') if 'cpu usage' in line]
 
 
 def writeEsHotThreads(data, mongo):
@@ -120,7 +116,7 @@ def main():
     logger.debug('starting')
     logger.debug(options)
 
-    es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+    es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
     client = MongoClient(options.mongohost, options.mongoport)
     # use meteor db
     mongo = client.meteor

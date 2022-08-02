@@ -18,15 +18,11 @@ from mozdef_util.utilities.logger import logger
 
 def isIPv4(ip):
     try:
-        # netaddr on it's own considers 1 and 0 to be valid_ipv4
-        # so a little sanity check prior to netaddr.
-        # Use IPNetwork instead of valid_ipv4 to allow CIDR
-        if '.' in ip and len(ip.split('.')) == 4:
-            # some ips are quoted
-            netaddr.IPNetwork(ip.strip("'").strip('"'))
-            return True
-        else:
+        if '.' not in ip or len(ip.split('.')) != 4:
             return False
+        # some ips are quoted
+        netaddr.IPNetwork(ip.strip("'").strip('"'))
+        return True
     except:
         return False
 
@@ -74,9 +70,7 @@ def main():
             {"$project": {"address": 1}},
             {"$limit": options.iplimit}
         ])
-        ips = []
-        for ip in ipCursor:
-            ips.append(ip['address'])
+        ips = [ip['address'] for ip in ipCursor]
         uniq_ranges = netaddr.cidr_merge(ips)
         # to text
         with open(options.outputfile, 'w') as outputfile:
@@ -136,8 +130,8 @@ def s3_upload_file(file_path, bucket_name, key_name):
     )
     s3.meta.client.upload_file(
         file_path, bucket_name, key_name, ExtraArgs={'ACL': 'public-read'})
-    url = "https://s3.amazonaws.com/{}/{}".format(bucket_name, key_name)
-    print("URL: {}".format(url))
+    url = f"https://s3.amazonaws.com/{bucket_name}/{key_name}"
+    print(f"URL: {url}")
     return url
 
 

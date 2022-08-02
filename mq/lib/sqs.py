@@ -8,5 +8,4 @@ def connect_sqs(region_name=None, aws_access_key_id=None,
         'sqs',
         **get_aws_credentials(region_name, aws_access_key_id, aws_secret_access_key)
     )
-    queue = sqs.get_queue_by_name(QueueName=task_exchange)
-    return queue
+    return sqs.get_queue_by_name(QueueName=task_exchange)

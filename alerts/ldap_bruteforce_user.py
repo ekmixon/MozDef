@@ -31,10 +31,10 @@ class AlertLdapBruteforceUser(AlertTask):
         category = 'bruteforce'
         tags = ['ldap']
         severity = 'WARNING'
-        client_list = set()
+        client_list = {
+            event['_source']['details']['client'] for event in aggreg['allevents']
+        }
 
-        for event in aggreg['allevents']:
-            client_list.add(event['_source']['details']['client'])
 
         summary = 'LDAP Bruteforce Attack in Progress against user ({0}) from the following source ip(s): {1}'.format(
             aggreg['value'],

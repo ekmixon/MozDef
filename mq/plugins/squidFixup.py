@@ -27,7 +27,6 @@ class message(object):
             self.mozdefhostname = "{0}".format(node())
         except:
             self.mozdefhostname = "failed to fetch mozdefhostname"
-            pass
 
     def isIPv4(self, ip):
         try:
@@ -53,9 +52,8 @@ class message(object):
                 dstport = int(inttokens[0])
         elif tokens[0] == "https":
             dstport = 443
-        else:
-            if tokens[-1] is not None:
-                dstport = int(tokens[-1])
+        elif tokens[-1] is not None:
+            dstport = int(tokens[-1])
 
         tld = tldextract.extract(tokens[offset])
         fqdn = ".".join(part for part in tld if part)
@@ -74,13 +72,12 @@ class message(object):
             return message, metadata
 
         # move Squid specific fields under 'details' while preserving metadata
-        newmessage = dict()
+        newmessage = {
+            "type": "squid",
+            "mozdefhostname": self.mozdefhostname,
+            "details": {},
+        }
 
-        # Set NSM as type for categorical filtering of events.
-        newmessage["type"] = "squid"
-
-        newmessage["mozdefhostname"] = self.mozdefhostname
-        newmessage["details"] = {}
 
         # move some fields that are expected at the event 'root' where they belong
         if "HOST_FROM" in message:

@@ -36,7 +36,7 @@ def main():
     '''
     logger.debug('starting')
     logger.debug(options)
-    es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+    es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
     index = options.index
 
     with open(options.default_mapping_file, 'r') as mapping_file:
@@ -44,7 +44,7 @@ def main():
 
     if not es.index_exists(index):
         try:
-            logger.debug('Creating %s index' % index)
+            logger.debug(f'Creating {index} index')
             es.create_index(index, default_mapping_contents)
         except Exception as e:
             logger.error("Unhandled exception, terminating: %r" % e)
@@ -75,7 +75,7 @@ def main():
 
         healthlog['details'] = dict(username='mozdef')
         healthlog['details']['loadaverage'] = list(os.getloadavg())
-        healthlog['details']['queues']=list()
+        healthlog['details']['queues'] = []
         healthlog['details']['total_deliver_eps'] = 0
         healthlog['details']['total_publish_eps'] = 0
         healthlog['details']['total_messages_ready'] = 0
@@ -87,10 +87,7 @@ def main():
                     healthlog['details']['total_messages_ready'] += m['messages_ready']
                 else:
                     mready = 0
-                if 'messages_unacknowledged' in m:
-                    munack = m['messages_unacknowledged']
-                else:
-                    munack = 0
+                munack = m['messages_unacknowledged'] if 'messages_unacknowledged' in m else 0
                 queueinfo=dict(
                     queue=m['name'],
                     vhost=m['vhost'],

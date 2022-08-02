@@ -60,14 +60,19 @@ class message(object):
             message['details']['ip']['protocolid'] = summary_items[13]
             last_index = 13
 
-        if ip_version == 4 or ip_version == 6:
+        if ip_version in {4, 6}:
             message['details']['ip']['length'] = summary_items[last_index + 1]
             message['details']['sourceipaddress'] = summary_items[last_index + 2]
             message['details']['destinationipaddress'] = summary_items[last_index + 3]
 
         proto_id = int(message['details']['ip']['protocolid'])
 
-        if proto_id == 6:
+        if proto_id == 17:
+            message['details']['sourceport'] = summary_items[last_index + 4]
+            message['details']['destinationport'] = summary_items[last_index + 5]
+            message['details']['datalength'] = summary_items[last_index + 6]
+
+        elif proto_id == 6:
             if 'tcp' not in message['details']:
                 message['details']['tcp'] = {}
 
@@ -80,9 +85,4 @@ class message(object):
             message['details']['tcp']['window'] = summary_items[last_index + 10]
             message['details']['tcp']['urg'] = summary_items[last_index + 11]
             message['details']['tcp']['options'] = summary_items[last_index + 12]
-        elif proto_id == 17:
-            message['details']['sourceport'] = summary_items[last_index + 4]
-            message['details']['destinationport'] = summary_items[last_index + 5]
-            message['details']['datalength'] = summary_items[last_index + 6]
-
         return (message, metadata)

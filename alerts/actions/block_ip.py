@@ -46,7 +46,13 @@ class message(object):
             {'userid': "MozDef"}
         ]
         headers = {'Content-type': 'application/json'}
-        resp = requests.post(url=self.options.restapi_url + "/blockip", data=json.dumps(post_data), auth=self._restapi_jwt, headers=headers)
+        resp = requests.post(
+            url=f"{self.options.restapi_url}/blockip",
+            data=json.dumps(post_data),
+            auth=self._restapi_jwt,
+            headers=headers,
+        )
+
         if not resp.ok:
             raise Exception("Received error {0} from rest api when updating alerts schedules {1}".format(resp.status_code, resp.data))
         return message

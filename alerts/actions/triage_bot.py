@@ -248,7 +248,7 @@ class message(object):
 
         have_request = request is not None
         should_refresh = mins_since_auth >\
-            self._config.token_validity_window_minutes
+                self._config.token_validity_window_minutes
 
         if have_request and should_refresh:
             self._oauth_handshake()
@@ -264,9 +264,7 @@ class message(object):
 
         if have_request:
             logger.debug("Attempting to dispatch request")
-            logger.debug(
-                "Alert {} triggered by {}".format(request.alert.value, request.user)
-            )
+            logger.debug(f"Alert {request.alert.value} triggered by {request.user}")
 
             # Do not dispatch messages so that they go to a user on Slack if we
             # end up appending to a duplicate chain.  This is how we avoid spam.
@@ -295,9 +293,7 @@ class message(object):
                 # In the case that we fail to maintain a duplicate chain,
                 # we should default to messaging users even at the risk of being
                 # noisy, as doing so is a useful indication of failure.
-                logger.exception(
-                    "Duplicate chain management error: {}".format(err.message),
-                )
+                logger.exception(f"Duplicate chain management error: {err.message}")
                 should_dispatch = True
 
             if should_dispatch:
@@ -341,7 +337,7 @@ class message(object):
             )
         ]
 
-        if len(functions) == 0:
+        if not functions:
             logger.error("Failed to discover Lambda function")
             raise DiscoveryFailure()
 
@@ -406,10 +402,10 @@ def primary_username(base: Url, tkn: Token, uname: Username) -> types.Optional[U
     `uname` is the string username of the user whose account to retrieve.
     """
 
-    route = "/v2/user/primary_username/{}".format(uname)
+    route = f"/v2/user/primary_username/{uname}"
     full_url = urljoin(base, route)
 
-    headers = {"Authorization": "Bearer {}".format(tkn)}
+    headers = {"Authorization": f"Bearer {tkn}"}
 
     try:
         resp = requests.get(full_url, headers=headers)
@@ -455,7 +451,7 @@ def _discovery(boto_session) -> DiscoveryInterface:
         # Use a record of the last request's response as well as the
         # (updated) state of the payload to determine when we've paged
         # through all available results.
-        while len(resp) == 0 or payload.get("Marker") not in ["", None]:
+        while not resp or payload.get("Marker") not in ["", None]:
             resp = lambda_.list_functions(**payload)
 
             funs.extend(
@@ -539,16 +535,15 @@ def _make_sensitive_host_access(
             first_name="",
             last_name="",
             alternative_name="",
-            primary_email="{}@mozilla.com".format(user),
+            primary_email=f"{user}@mozilla.com",
             mozilla_ldap_primary_email="",
         )
 
+
         confidence = Confidence.LOW
 
-    summary = (
-        "An SSH session to a potentially sensitive host {} was made "
-        "by your user account."
-    ).format(host)
+    summary = f"An SSH session to a potentially sensitive host {host} was made by your user account."
+
 
     return AlertTriageRequest(
         alert["_id"],
@@ -637,15 +632,17 @@ def _make_ssh_access_releng(
             first_name="",
             last_name="",
             alternative_name="",
-            primary_email="{}@mozilla.com".format(user),
+            primary_email=f"{user}@mozilla.com",
             mozilla_ldap_primary_email="",
         )
+
 
         confidence = Confidence.LOW
 
     summary = (
-        "An SSH session was established to host {} by your user " "account."
-    ).format(host)
+        f"An SSH session was established to host {host} by your user account."
+    )
+
 
     return AlertTriageRequest(
         alert["_id"],
@@ -659,7 +656,7 @@ def _make_ssh_access_releng(
 def _retrieve_duplicate_chain(
     api: RESTConfig, label: AlertLabel, email: Email
 ) -> types.Optional[DuplicateChain]:
-    url = "{}/alerttriagechain".format(api.url)
+    url = f"{api.url}/alerttriagechain"
 
     payload = {
         "alert": label.value,
@@ -676,9 +673,9 @@ def _retrieve_duplicate_chain(
         resp = requests.get(url, params=payload, auth=jwt_auth)
         resp_data = resp.json()
     except json.JSONDecodeError as ex:
-        raise APIError("Did not receive JSON response: {}".format(ex))
+        raise APIError(f"Did not receive JSON response: {ex}")
     except requests.exceptions.RequestException as ex:
-        raise APIError("Failed to make request: {}".format(ex))
+        raise APIError(f"Failed to make request: {ex}")
 
     error = resp_data.get("error")
 
@@ -707,7 +704,7 @@ def _retrieve_duplicate_chain(
 def _create_duplicate_chain(
     api: RESTConfig, label: AlertLabel, email: Email, ids: types.List[str]
 ) -> bool:
-    url = "{}/alerttriagechain".format(api.url)
+    url = f"{api.url}/alerttriagechain"
 
     payload = {
         "alert": label.value,
@@ -724,7 +721,7 @@ def _create_duplicate_chain(
     try:
         resp = requests.post(url, json=payload, auth=jwt_auth)
     except requests.exceptions.RequestException as ex:
-        raise APIError("Failed to make request: {}".format(ex))
+        raise APIError(f"Failed to make request: {ex}")
 
     error = resp.json().get("error")
 
@@ -737,7 +734,7 @@ def _create_duplicate_chain(
 def _update_duplicate_chain(
     api: RESTConfig, label: AlertLabel, email: Email, ids: types.List[str]
 ) -> bool:
-    url = "{}/alerttriagechain".format(api.url)
+    url = f"{api.url}/alerttriagechain"
 
     payload = {
         "alert": label.value,
@@ -754,7 +751,7 @@ def _update_duplicate_chain(
     try:
         resp = requests.put(url, json=payload, auth=jwt_auth)
     except requests.exceptions.RequestException as ex:
-        raise APIError("Failed to make request: {}".format(ex))
+        raise APIError(f"Failed to make request: {ex}")
 
     error = resp.json().get("error")
 

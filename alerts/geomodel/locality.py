@@ -51,11 +51,11 @@ class State(NamedTuple):
     username: str
     localities: List[Locality]
 
-    def new(username: str, localities: List[Locality]) -> 'State':
+    def new(self, localities: List[Locality]) -> 'State':
         '''Construct a new State with all fields populated.
         '''
 
-        return State(Locality.index_name(), username, localities)
+        return State(Locality.index_name(), self, localities)
 
 
 class Entry(NamedTuple):
@@ -69,12 +69,12 @@ class Entry(NamedTuple):
     identifier: Optional[str]
     state: State
 
-    def new(state: State) -> 'Entry':
+    def new(self) -> 'Entry':
         '''Construct a new `Entry` that, when journaled, will result in a new
         state entry being recorded rather than replacing an existing one.
         '''
 
-        return Entry('', state)
+        return Entry('', self)
 
 
 class Update(NamedTuple):
@@ -138,9 +138,7 @@ def wrap_query(client: ESClient) -> QueryInterface:
             state = State.new(state_dict['username'], state_dict['localities'])
 
             return Entry(eid, state)
-        except TypeError:
-            return None
-        except KeyError:
+        except (TypeError, KeyError):
             return None
 
     return wrapper
@@ -173,7 +171,7 @@ def from_event(
         geo_data.get('longitude')
     )
 
-    if any([v is None for v in [city, country, lat, lon]]):
+    if any(v is None for v in [city, country, lat, lon]):
         return None
 
     return Locality(source_ip, city, country, active_time, lat, lon, radius)

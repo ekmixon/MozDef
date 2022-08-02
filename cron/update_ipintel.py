@@ -23,11 +23,11 @@ class Config(types.NamedTuple):
     source_url: str
     download_location: str
 
-    def load(path: str) -> 'Config':
+    def load(self) -> 'Config':
         '''Attempt to load a `Config` from a JSON file.
         '''
 
-        with open(path) as cfg_file:
+        with open(self) as cfg_file:
             return Config(**json.load(cfg_file))
 
 

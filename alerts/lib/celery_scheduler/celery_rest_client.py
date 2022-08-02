@@ -28,18 +28,31 @@ class CeleryRestClient():
             raise Exception("Need to define CELERY_RESTAPI_URL")
 
     def fetch_schedule_dict(self):
-        resp = requests.get(self._restapi_url + "/alertschedules", auth=self._restapi_jwt)
+        resp = requests.get(
+            f"{self._restapi_url}/alertschedules", auth=self._restapi_jwt
+        )
+
         if not resp.ok:
             raise Exception("Received error {0} from rest api when fetching alert schedules: {1}".format(resp.status_code, resp.text))
         return json.loads(resp.text)
 
     def sync_schedules(self, current_schedule):
-        resp = requests.post(url=RESTAPI_URL + "/syncalertschedules", data=json.dumps(current_schedule), auth=self._restapi_jwt)
+        resp = requests.post(
+            url=f"{RESTAPI_URL}/syncalertschedules",
+            data=json.dumps(current_schedule),
+            auth=self._restapi_jwt,
+        )
+
         if not resp.ok:
             raise Exception("Received error {0} from rest api when updating alerts schedules {1}".format(resp.status_code, resp.data))
 
     def update_schedules(self, current_schedule):
-        resp = requests.post(url=RESTAPI_URL + "/updatealertschedules", data=json.dumps(current_schedule), auth=self._restapi_jwt)
+        resp = requests.post(
+            url=f"{RESTAPI_URL}/updatealertschedules",
+            data=json.dumps(current_schedule),
+            auth=self._restapi_jwt,
+        )
+
         if not resp.ok:
             raise Exception("Received error {0} from rest api when updating alerts schedules {1}".format(resp.status_code, resp.data))
 
@@ -57,10 +70,8 @@ class CeleryRestClient():
                 current_app.register_task(alert_class())
             except ImportError as e:
                 logger.exception("Error importing {0}: {1}".format(alert_name, e))
-                pass
             except Exception as e:
                 logger.exception("Generic error registering {0}: {1}".format(alert_name, e))
-                pass
             alert_schedule = {
                 "name": alert_name,
                 "task": alert_name,

@@ -25,7 +25,7 @@ from mozdef_util.elasticsearch_client import ElasticsearchClient
 def esPruneIndexes():
     logger.debug('started')
     try:
-        es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+        es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
         indices = es.get_indices()
         # do the pruning
         for (index, dobackup, rotation, pruning) in zip(options.indices, options.dobackup, options.rotation, options.pruning):
@@ -34,16 +34,16 @@ def esPruneIndexes():
                     index_to_prune = index
                     if rotation == 'daily':
                         idate = date.strftime(toUTC(datetime.now()) - timedelta(days=int(pruning)), '%Y%m%d')
-                        index_to_prune += '-%s' % idate
+                        index_to_prune += f'-{idate}'
                     elif rotation == 'monthly':
                         idate = date.strftime(datetime.utcnow() - timedelta(days=31 * int(pruning)), '%Y%m')
-                        index_to_prune += '-%s' % idate
+                        index_to_prune += f'-{idate}'
 
                     if index_to_prune in indices:
-                        logger.debug('Deleting index: %s' % index_to_prune)
+                        logger.debug(f'Deleting index: {index_to_prune}')
                         es.delete_index(index_to_prune, True)
                     else:
-                        logger.error('Error deleting index %s, index missing' % index_to_prune)
+                        logger.error(f'Error deleting index {index_to_prune}, index missing')
             except Exception as e:
                 logger.error("Unhandled exception while deleting %s, terminating: %r" % (index_to_prune, e))
 

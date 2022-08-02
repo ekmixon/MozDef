@@ -35,10 +35,9 @@ def esSearch(es):
     mozdefstats['summary'] = 'Aggregated category counts'
     mozdefstats['processid'] = os.getpid()
     mozdefstats['processname'] = sys.argv[0]
-    mozdefstats['details'] = dict(counts=list())
+    mozdefstats['details'] = dict(counts=[])
     for bucket in results['aggregations']['category']['terms']:
-        entry = dict()
-        entry[bucket['key']] = bucket['count']
+        entry = {bucket['key']: bucket['count']}
         mozdefstats['details']['counts'].append(entry)
     return mozdefstats
 
@@ -50,7 +49,7 @@ def main():
     '''
     logger.debug('starting')
     logger.debug(options)
-    es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+    es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
     index = options.index
     stats = esSearch(es)
     logger.debug(json.dumps(stats))

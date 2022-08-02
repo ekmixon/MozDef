@@ -51,7 +51,7 @@ def getQueueSizes():
         'username': 'mozdef'
     }
     for queue_name in options.taskexchange:
-        logger.debug('Looking for sqs queue stats in queue' + queue_name)
+        logger.debug(f'Looking for sqs queue stats in queue{queue_name}')
         queue_url = sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
         queue_attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])['Attributes']
         queue_stats = {

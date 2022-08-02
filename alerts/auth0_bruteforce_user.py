@@ -30,10 +30,11 @@ class AlertAuth0BruteforceUser(AlertTask):
         category = 'bruteforce'
         tags = ['auth0']
         severity = self.config.severity
-        ip_list = set()
+        ip_list = {
+            event['_source']['details']['sourceipaddress']
+            for event in aggreg['allevents']
+        }
 
-        for event in aggreg['allevents']:
-            ip_list.add(event['_source']['details']['sourceipaddress'])
 
         summary = 'Auth0 Username/Password Bruteforce Attack in Progress against user ({0}) from the following source ip(s): {1}'.format(
             aggreg['value'], ", ".join(sorted(ip_list)[:10]))

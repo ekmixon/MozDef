@@ -80,10 +80,7 @@ def add_hostname_to_ip(ip, output_format, require_internal=True):
     if require_internal and not ip_obj.is_private():
         return ip
     hostname = hostname_from_ip(ip)
-    if hostname is None:
-        return ip
-    else:
-        return output_format.format(ip, hostname)
+    return ip if hostname is None else output_format.format(ip, hostname)
 
 
 class AlertTask(Task):
@@ -119,7 +116,7 @@ class AlertTask(Task):
 
     @property
     def log(self):
-        return get_task_logger("%s.%s" % (__name__, self.alert_name))
+        return get_task_logger(f"{__name__}.{self.alert_name}")
 
     def parse_config(self, config_filename, config_keys):
         myparser = OptionParser()
@@ -150,7 +147,7 @@ class AlertTask(Task):
             )
             return connString
         elif exchange_protocol == "sqs":
-            connString = "sqs://{}".format(getConfig("alertSqsQueueUrl", None, None))
+            connString = f'sqs://{getConfig("alertSqsQueueUrl", None, None)}'
             if connString:
                 connString = connString.replace('https://','')
             return connString
@@ -207,12 +204,14 @@ class AlertTask(Task):
             returned as a list of tuples
             [(value,count),(value,count)]
         """
-        inspectlist = list()
+        inspectlist = []
         path = list(dictpath(dictkeypath))
         for i in listofdicts:
-            for k in list(keypaths(i)):
-                if not (set(k[0]).symmetric_difference(path)):
-                    inspectlist.append(k[1])
+            inspectlist.extend(
+                k[1]
+                for k in list(keypaths(i))
+                if not (set(k[0]).symmetric_difference(path))
+            )
 
         return Counter(inspectlist).most_common()
 
@@ -256,7 +255,7 @@ class AlertTask(Task):
         # If an alert code hasn't explicitly set notify_mozdefbot field
         if 'notify_mozdefbot' not in alert or alert['notify_mozdefbot'] is None:
             alert["notify_mozdefbot"] = True
-            if alert["severity"] == "NOTICE" or alert["severity"] == "INFO":
+            if alert["severity"] in ["NOTICE", "INFO"]:
                 alert["notify_mozdefbot"] = False
 
             # If an alert sets specific channel, then we should probably always notify in mozdefbot
@@ -337,9 +336,9 @@ class AlertTask(Task):
 
             # List of aggregation values that can be counted/summarized by Counter
             # Example: ['evil@evil.com','haxoor@noob.com', 'evil@evil.com'] for an email aggregField
-            aggregationValues = []
-            for r in results:
-                aggregationValues.append(getValueByPath(r["_source"], aggregationPath))
+            aggregationValues = [
+                getValueByPath(r["_source"], aggregationPath) for r in results
+            ]
 
             # [{value:'evil@evil.com',count:1337,events:[...]}, ...]
             aggregationList = []
@@ -366,8 +365,7 @@ class AlertTask(Task):
         """
         if len(self.events) > 0:
             for i in self.events:
-                alert = self.onEvent(i, **kwargs)
-                if alert:
+                if alert := self.onEvent(i, **kwargs):
                     alert = self.tagBotNotify(alert)
                     self.log.debug(alert)
                     alert = self.alertPlugins(alert)
@@ -380,8 +378,7 @@ class AlertTask(Task):
         # did we not match anything?
         # can also be used as an alert trigger
         if len(self.events) == 0:
-            alert = self.onNoEvent(**kwargs)
-            if alert:
+            if alert := self.onNoEvent(**kwargs):
                 alert = self.tagBotNotify(alert)
                 self.log.debug(alert)
                 alertResultES = self.alertToES(alert)
@@ -398,8 +395,7 @@ class AlertTask(Task):
             for aggregation in self.aggregations:
                 if aggregation["count"] >= threshold:
                     aggregation["config"] = config
-                    alert = self.onAggregation(aggregation)
-                    if alert:
+                    if alert := self.onAggregation(aggregation):
                         alert = self.tagBotNotify(alert)
                         self.log.debug(alert)
                         alert = self.alertPlugins(alert)
@@ -416,9 +412,7 @@ class AlertTask(Task):
         """
         Send alerts through a plugin system
         """
-        alertDict = self.plugin_set.run_plugins(alert)[0]
-
-        return alertDict
+        return self.plugin_set.run_plugins(alert)[0]
 
     def createAlertDict(
         self,

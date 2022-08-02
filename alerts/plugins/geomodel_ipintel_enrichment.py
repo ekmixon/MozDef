@@ -27,11 +27,11 @@ class Config(types.NamedTuple):
     intel_file_path: str
     match_tag: str
 
-    def load(file_path: str) -> 'Config':
+    def load(self) -> 'Config':
         '''Attempt to load a `Config` from a JSON file.
         '''
 
-        with open(file_path) as cfg_file:
+        with open(self) as cfg_file:
             return Config(**json.load(cfg_file))
 
 
@@ -118,13 +118,11 @@ def enrich(alert, intel):
         if entry['classification'] == vpn_class
     ]
 
-    if len(tor_nodes) > 0:
-        alert['summary'] += '; Tor nodes detected: {}'.format(
-            ', '.join(tor_nodes))
+    if tor_nodes:
+        alert['summary'] += f"; Tor nodes detected: {', '.join(tor_nodes)}"
 
-    if len(vpn_nodes) > 0:
-        alert['summary'] += '; VPNs detected: {}'.format(
-            ', '.join(vpn_nodes))
+    if vpn_nodes:
+        alert['summary'] += f"; VPNs detected: {', '.join(vpn_nodes)}"
 
     details['ipintel'] = ip_intel
 

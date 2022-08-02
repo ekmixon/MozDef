@@ -231,7 +231,7 @@ def process_msg(mozmsg, msg):
             details.success = True
     except KeyError:
         # New message type, check https://manage-dev.mozilla.auth0.com/docs/api/management/v2#!/Logs/get_logs for ex.
-        logger.error("New auth0 message type, please add support: {}".format(msg.type))
+        logger.error(f"New auth0 message type, please add support: {msg.type}")
         details["eventname"] = msg.type
 
     # determine severity level
@@ -411,13 +411,17 @@ def fetch_new_bearer(config):
     data = {
         "client_id": config.auth0.client_id,
         "client_secret": config.auth0.client_secret,
-        "audience": "{}/api/v2/".format(config.auth0.url),
+        "audience": f"{config.auth0.url}/api/v2/",
         "grant_type": "client_credentials",
     }
+
     headers = {
         "content-type": "application/json"
     }
-    resp = requests.post("{}/oauth/token".format(config.auth0.url), json=data, headers=headers)
+    resp = requests.post(
+        f"{config.auth0.url}/oauth/token", json=data, headers=headers
+    )
+
     if not resp.ok:
         raise Exception(resp.text)
 
@@ -434,13 +438,13 @@ def verify_bearer(bearer):
         # we pad the time comparision with 30 minutes
         return (datetime.now() + timedelta(minutes=30)) < token_expiry
     except exceptions.JOSEError as e:
-        logger.error("Unable to parse token : {} : {}".format(bearer, e))
+        logger.error(f"Unable to parse token : {bearer} : {e}")
         return False
 
 
 def main():
     # Configuration loading
-    config_location = os.path.dirname(sys.argv[0]) + "/" + "auth02mozdef.json"
+    config_location = f"{os.path.dirname(sys.argv[0])}/auth02mozdef.json"
     with open(config_location) as fd:
         config = DotDict(hjson.load(fd))
 
@@ -450,18 +454,22 @@ def main():
 
     state = load_state(config.state_file)
     # If bearer isn't set, reach out to auth0 for it
-    if state['bearer'] is None:
+    if (
+        state['bearer'] is not None
+        and not verify_bearer(state['bearer'])
+        or state['bearer'] is None
+    ):
         state['bearer'] = fetch_new_bearer(config)
-    else:
-        # Verify bearer token is still valid
-        if not verify_bearer(state['bearer']):
-            state['bearer'] = fetch_new_bearer(config)
 
-    headers = {"Authorization": "Bearer {}".format(state['bearer']), "Accept": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {state['bearer']}",
+        "Accept": "application/json",
+    }
+
 
     fromid = state['fromid']
     # Auth0 will interpret a 0 state as an error on our hosted instance, but will accept an empty parameter "as if it was 0"
-    if fromid == 0 or fromid == "0":
+    if fromid in [0, "0"]:
         fromid = ""
     totals = 1
     start = 0
@@ -471,10 +479,9 @@ def main():
     while totals > start + length:
         (totals, start, length, lastid) = fetch_auth0_logs(config, headers, fromid)
 
-        if totals == -1:
-            if fromid == lastid:
-                # We got everything, we're done!
-                break
+        if totals == -1 and fromid == lastid:
+            # We got everything, we're done!
+            break
         fromid = lastid
 
     state['fromid'] = lastid

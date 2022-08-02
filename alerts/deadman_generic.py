@@ -45,9 +45,7 @@ class AlertDeadmanGeneric(DeadmanAlertTask):
         category = 'deadman'
         tags = ['deadman']
         # Allow each definition to specify custom tags
-        for custom_tag in self.custom_tags:
-            tags.append(custom_tag)
-
+        tags.extend(iter(self.custom_tags))
         severity = self._config['severity']
 
         summary = "Deadman check failed for '{0}' the past {1} {2}".format(

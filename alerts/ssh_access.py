@@ -21,10 +21,7 @@ class AlertSSHAccess(AlertTask):
             PhraseMatch('summary', 'Accepted publickey for ')
         ])
 
-        watchedsrcips = []
-        for watched in self.config['watchlist']:
-            watchedsrcips.append(watched['ipaddress'])
-
+        watchedsrcips = [watched['ipaddress'] for watched in self.config['watchlist']]
         search_query.add_must([
             TermsMatch('details.sourceipaddress', watchedsrcips)
         ])

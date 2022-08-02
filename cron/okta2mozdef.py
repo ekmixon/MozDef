@@ -53,7 +53,7 @@ def main():
     logger.debug('started')
     # logger.debug(options)
     try:
-        es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+        es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
         s = requests.Session()
         s.headers.update({'Accept': 'application/json'})
         s.headers.update({'Content-type': 'application/json'})
@@ -75,8 +75,7 @@ def main():
                 if 'published' in event:
                     if toUTC(event['published']) > toUTC(state.data['lastrun']):
                         try:
-                            mozdefEvent = dict()
-                            mozdefEvent['utctimestamp']=toUTC(event['published']).isoformat()
+                            mozdefEvent = {'utctimestamp': toUTC(event['published']).isoformat()}
                             mozdefEvent['receivedtimestamp']=toUTC(datetime.now()).isoformat()
                             mozdefEvent['category'] = 'okta'
                             mozdefEvent['tags'] = ['okta']
@@ -91,9 +90,13 @@ def main():
                             # Which ends up working out well in Okta's case.
                             if 'actors' in event:
                                 for actor in event['actors']:
-                                    if 'ipAddress' in actor:
-                                        if netaddr.valid_ipv4(actor['ipAddress']):
-                                            mozdefEvent['details']['sourceipaddress'] = actor['ipAddress']
+                                    if (
+                                        'ipAddress' in actor
+                                        and netaddr.valid_ipv4(
+                                            actor['ipAddress']
+                                        )
+                                    ):
+                                        mozdefEvent['details']['sourceipaddress'] = actor['ipAddress']
                                     if 'login' in actor:
                                         mozdefEvent['details']['username'] = actor['login']
                                     if 'requestUri' in actor:
@@ -116,7 +119,10 @@ def main():
             state.data['lastrun'] = lastrun
             state.write_state_file()
         else:
-            logger.error('Could not get Okta events HTTP error code {} reason {}'.format(r.status_code, r.reason))
+            logger.error(
+                f'Could not get Okta events HTTP error code {r.status_code} reason {r.reason}'
+            )
+
     except Exception as e:
         logger.error("Unhandled exception, terminating: %r" % e)
 

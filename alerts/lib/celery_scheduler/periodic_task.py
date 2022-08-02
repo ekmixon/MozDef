@@ -135,9 +135,7 @@ class PeriodicTask():
 
     @property
     def schedule(self):
-        if self.schedule_type == 'interval':
-            return self.celery_schedule.schedule
-        elif self.schedule_type == 'crontab':
+        if self.schedule_type in ['interval', 'crontab']:
             return self.celery_schedule.schedule
         else:
             raise Exception("must define interval or crontab schedule")

@@ -27,11 +27,11 @@ class Config(types.NamedTuple):
     search_window_hours: int
     indices_to_search: types.List[str]
 
-    def load(path: str) -> 'Config':
+    def load(self) -> 'Config':
         '''Attempt to load a `Config` from a JSON file.
         '''
 
-        with open(path) as cfg_file:
+        with open(self) as cfg_file:
             return Config(**json.load(cfg_file))
 
 
@@ -86,21 +86,20 @@ def enrich(alert: dict, syslog_evts: types.List[dict]) -> dict:
         for evt in syslog_evts
     ]
 
-    possible_usernames = list(set([
-        username
-        for username in scan_results
-        if username is not None
-    ]))
+    possible_usernames = list(
+        {username for username in scan_results if username is not None}
+    )
+
 
     details['possible_usernames'] = possible_usernames
 
     alert['details'] = details
 
-    if len(possible_usernames) > 0:
-        alert['summary'] = '{}; Possible users: {}'.format(
-            summary,
-            ', '.join(possible_usernames),
-        )
+    if possible_usernames:
+        alert[
+            'summary'
+        ] = f"{summary}; Possible users: {', '.join(possible_usernames)}"
+
 
     return alert
 
@@ -121,7 +120,4 @@ def _most_common_hostname(events: types.List[dict]) -> types.Optional[str]:
         [(count, hostname) for hostname, count in findings.items()],
         reverse=True)
 
-    if len(sorted_findings) == 0:
-        return None
-
-    return sorted_findings[0][1]
+    return None if len(sorted_findings) == 0 else sorted_findings[0][1]

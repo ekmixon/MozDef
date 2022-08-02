@@ -118,10 +118,7 @@ class message(object):
     def onMessage(self, message):
         alert_tags = message.get('tags', [])
 
-        should_enrich = any([
-            tag in alert_tags
-            for tag in self.match_tags
-        ])
+        should_enrich = any(tag in alert_tags for tag in self.match_tags)
 
         if should_enrich:
             return enrich(
@@ -146,10 +143,7 @@ def _load_config(file_path):
 def take(ls, n_items=None):
     '''Take only N items from a list.'''
 
-    if n_items is None:
-        return ls
-
-    return ls[:n_items]
+    return ls if n_items is None else ls[:n_items]
 
 
 def enrich(alert, search_fn, search_window, max_connections):

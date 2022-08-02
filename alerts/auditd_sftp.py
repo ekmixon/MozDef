@@ -30,12 +30,10 @@ class AlertSFTPEvent(AlertTask):
         severity = 'NOTICE'
         tags = ['audisp-json, audit']
 
-        srchost = 'unknown'
         username = 'unknown'
         directory = 'unknown'
         x = event['_source']
-        if 'hostname' in x:
-            srchost = x['hostname']
+        srchost = x['hostname'] if 'hostname' in x else 'unknown'
         if 'details' in x:
             if 'originaluser' in x['details']:
                 username = x['details']['originaluser']

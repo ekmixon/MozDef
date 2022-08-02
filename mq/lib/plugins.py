@@ -35,8 +35,8 @@ def sendEventToPlugins(anevent, metadata, pluginList):
         send = False
         if isinstance(plugin[1], list):
             try:
-                plugin_matching_keys = set([item.lower() for item in plugin[1]])
-                event_tokens = [e for e in dict2List(anevent)]
+                plugin_matching_keys = {item.lower() for item in plugin[1]}
+                event_tokens = list(dict2List(anevent))
                 if plugin_matching_keys.intersection(event_tokens):
                     send = True
             except TypeError:
@@ -52,34 +52,28 @@ def sendEventToPlugins(anevent, metadata, pluginList):
             executed_plugins.append(plugin_name)
     # Tag all events with what plugins ran on it
     if 'mozdef' not in anevent:
-        anevent['mozdef'] = {}
-        anevent['mozdef']['plugins'] = executed_plugins
-
+        anevent['mozdef'] = {'plugins': executed_plugins}
     return (anevent, metadata)
 
 
 def registerPlugins():
-    pluginList = list()   # tuple of module,registration dict,priority
+    pluginList = []
     if os.path.exists('plugins'):
         modules = pynsive.list_modules('plugins')
         for mname in modules:
             module = pynsive.import_module(mname)
             importlib.reload(module)
             if not module:
-                raise ImportError('Unable to load module {}'.format(mname))
-            else:
-                if 'message' in dir(module):
-                    mclass = module.message()
-                    mreg = mclass.registration
-                    if type(mreg) != list:
-                        raise ImportError('Plugin {0} registration needs to be a list'.format(mname))
-                    if 'priority' in dir(mclass):
-                        mpriority = mclass.priority
-                    else:
-                        mpriority = 100
-                    if isinstance(mreg, list):
-                        logger.info('[*] plugin {0} registered to receive messages with {1}'.format(mname, mreg))
-                        pluginList.append((mclass, mreg, mpriority))
+                raise ImportError(f'Unable to load module {mname}')
+            if 'message' in dir(module):
+                mclass = module.message()
+                mreg = mclass.registration
+                if type(mreg) != list:
+                    raise ImportError('Plugin {0} registration needs to be a list'.format(mname))
+                mpriority = mclass.priority if 'priority' in dir(mclass) else 100
+                if isinstance(mreg, list):
+                    logger.info('[*] plugin {0} registered to receive messages with {1}'.format(mname, mreg))
+                    pluginList.append((mclass, mreg, mpriority))
     return pluginList
 
 
@@ -88,6 +82,4 @@ def checkPlugins(pluginList, lastPluginCheck, checkFrequency):
         # print('[*] checking plugins')
         lastPluginCheck = datetime.now()
         pluginList = registerPlugins()
-        return pluginList, lastPluginCheck
-    else:
-        return pluginList, lastPluginCheck
+    return pluginList, lastPluginCheck

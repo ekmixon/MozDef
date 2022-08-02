@@ -19,28 +19,30 @@ from mozdef_util.utilities.logger import logger, initLogger
 
 
 def fetch_db_data(db_file):
-    db_download_location = 'https://updates.maxmind.com/geoip/databases/' + db_file[:-5] + '/update'
-    logger.debug('Fetching db data from ' + db_download_location)
+    db_download_location = (
+        f'https://updates.maxmind.com/geoip/databases/{db_file[:-5]}/update'
+    )
+
+    logger.debug(f'Fetching db data from {db_download_location}')
     auth_creds = (options.account_id, options.license_key)
     response = requests.get(db_download_location, auth=auth_creds)
     if not response.ok:
         raise Exception("Received bad response from maxmind server: {0}".format(response.text))
     db_raw_data = response.content
-    with tempfile.NamedTemporaryFile(mode='wb', prefix=db_file + '.zip.', suffix='.tmp', dir=options.db_store_location) as temp:
-        logger.debug('Writing compressed gzip to temp file: ' + temp.name)
+    with tempfile.NamedTemporaryFile(mode='wb', prefix=f'{db_file}.zip.', suffix='.tmp', dir=options.db_store_location) as temp:
+        logger.debug(f'Writing compressed gzip to temp file: {temp.name}')
         temp.write(db_raw_data)
         temp.flush()
-        logger.debug('Extracting gzip data from ' + temp.name)
+        logger.debug(f'Extracting gzip data from {temp.name}')
         gfile = gzip.GzipFile(temp.name, "rb")
-        data = gfile.read()
-        return data
+        return gfile.read()
 
 
 def save_db_data(db_file, db_data):
     save_path = path.join(options.db_store_location, db_file)
     fd, temp_path = mkstemp(suffix='.tmp', prefix=db_file, dir=options.db_store_location)
     with open(temp_path, 'wb') as temp:
-        logger.debug("Saving db data to " + temp_path)
+        logger.debug(f"Saving db data to {temp_path}")
         temp.write(db_data)
         fsync(temp.fileno())
         temp.flush()
@@ -48,7 +50,7 @@ def save_db_data(db_file, db_data):
         geo_ip = GeoIP(temp_path)
         # Do a generic lookup to verify we don't get any errors (malformed data)
         geo_ip.lookup_ip('8.8.8.8')
-        logger.debug("Moving temp file to " + save_path)
+        logger.debug(f"Moving temp file to {save_path}")
     close(fd)
     rename(temp_path, save_path)
 

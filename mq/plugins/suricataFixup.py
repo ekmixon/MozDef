@@ -24,7 +24,6 @@ class message(object):
             self.mozdefhostname = '{0}'.format(node())
         except:
             self.mozdefhostname = 'failed to fetch mozdefhostname'
-            pass
 
     def onMessage(self, message, metadata):
 

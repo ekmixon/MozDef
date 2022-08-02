@@ -37,13 +37,20 @@ class AlertMultipleIntelHits(AlertTask):
         severity = 'NOTICE'
         hostname = aggreg['events'][0]['_source']['hostname']
 
-        summary = '{0} {1} {2} on {3}'.format(aggreg['count'], hostname, ' Bro intel match for indicator:', aggreg['value'])
+        summary = (
+            '{0} {1} {2} on {3}'.format(
+                aggreg['count'],
+                hostname,
+                ' Bro intel match for indicator:',
+                aggreg['value'],
+            )
+            + ' sample hosts that hit it: '
+        )
 
-        summary += ' sample hosts that hit it: '
         for e in aggreg['events'][:3]:
             if 'details' in e['_source'] \
-               and 'sourceipaddress' in e['_source']['details'] \
-               and 'seenwhere' in e['_source']['details']:
+                   and 'sourceipaddress' in e['_source']['details'] \
+                   and 'seenwhere' in e['_source']['details']:
                 interestingaddres = ''
                 # someone talking to a bad guy, I want to know who
                 # someone resolving bad guy's domain name, I want to know who

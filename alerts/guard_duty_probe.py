@@ -37,7 +37,7 @@ class AlertGuardDutyProbe(AlertTask):
         category = 'bruteforce'
         tags = ['guardduty', 'bruteforce']
         severity = 'INFO'
-        summary = "Guard Duty Port Probe by {}".format(aggreg['value'])
+        summary = f"Guard Duty Port Probe by {aggreg['value']}"
 
         # Create the alert object based on these properties
         return self.createAlertDict(summary, category, tags, aggreg['events'], severity)

@@ -51,15 +51,10 @@ def bulkindex():
             return
         except ValueError as e:
             bottlelog('Decoded raw input failed with {0}'.format(e))
-            pass
-
         if len(bulkpost)>10:  # Handles single element format {}
             # TODO Check for other bulk formats.
             # iterate on messages and post to event message queue
-            eventlist=[]
-            for i in bulkpost.splitlines():
-                eventlist.append(i)
-
+            eventlist = list(bulkpost.splitlines())
             for i in eventlist:
                 try:
                     # valid json?

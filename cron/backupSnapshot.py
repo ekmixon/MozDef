@@ -48,9 +48,14 @@ def main():
                 "base_path": "elasticsearch/{0}/{1}".format(bucketdate, hostname)
             }
         }
-        r = requests.put('%s/_snapshot/s3backup' % esserver, headers=json_headers, data=json.dumps(snapshot_config))
+        r = requests.put(
+            f'{esserver}/_snapshot/s3backup',
+            headers=json_headers,
+            data=json.dumps(snapshot_config),
+        )
+
         if 'status' in r.json():
-            logger.error("Error while registering snapshot repo: %s" % r.text)
+            logger.error(f"Error while registering snapshot repo: {r.text}")
         else:
             logger.debug('snapshot repo registered')
 
@@ -59,11 +64,14 @@ def main():
             if dobackup == '1':
                 index_to_snapshot = index
                 if rotation == 'daily':
-                    index_to_snapshot += '-%s' % idate
+                    index_to_snapshot += f'-{idate}'
                 elif rotation == 'monthly':
-                    index_to_snapshot += '-%s' % idate[:6]
+                    index_to_snapshot += f'-{idate[:6]}'
 
-                logger.debug('Creating %s snapshot (this may take a while)...' % index_to_snapshot)
+                logger.debug(
+                    f'Creating {index_to_snapshot} snapshot (this may take a while)...'
+                )
+
                 snapshot_config = {
                     'indices': index_to_snapshot
                 }
@@ -74,9 +82,9 @@ def main():
                     data=json.dumps(snapshot_config)
                 )
                 if 'status' in r.json():
-                    logger.error('Error snapshotting %s: %s' % (index_to_snapshot, r.json()))
+                    logger.error(f'Error snapshotting {index_to_snapshot}: {r.json()}')
                 else:
-                    logger.debug('snapshot %s finished' % index_to_snapshot)
+                    logger.debug(f'snapshot {index_to_snapshot} finished')
 
     except Exception as e:
         logger.error("Unhandled exception, terminating: %r" % e)

@@ -28,36 +28,49 @@ class message(object):
 
         if "logName" not in event:
             return (message, metadata)
-        else:
             # XXX: implement filtering of audit types that we want to see (yaml)
-            newmessage = dict()
-            logtype = "UNKNOWN"
-            if "logName" in event:
-                logtype = urllib.parse.unquote(event["logName"]).split("/")[-1].strip()
-            if "protoPayload" in event:
-                if "@type" in event["protoPayload"]:
-                    if event["protoPayload"]["@type"] == "type.googleapis.com/google.cloud.audit.AuditLog":
-                        newmessage["category"] = logtype
-                        newmessage["source"] = "stackdriver"
-                        newmessage["tags"] = message["tags"] + ["stackdriver"]
-            elif "jsonPayload" in event:
-                if "logName" in event:
-                    if logtype == "activity_log":
-                        newmessage["category"] = "gceactivity"
-                        newmessage["source"] = "stackdriver"
-                        newmessage["tags"] = message["tags"] + ["stackdriver"]
-            elif "textPayload" in event:
-                if "logName" in event:
-                    if logtype == "syslog":
-                        newmessage["category"] = logtype
-                        newmessage["source"] = "stackdriver"
-                        newmessage["tags"] = message["tags"] + ["stackdriver"]
-
-            newmessage["receivedtimestamp"] = toUTC(message["receivedtimestamp"]).isoformat()
-            newmessage["timestamp"] = toUTC(event["timestamp"]).isoformat()
-            newmessage["utctimestamp"] = toUTC(event["timestamp"]).isoformat()
-            newmessage["mozdefhostname"] = message["mozdefhostname"]
-            newmessage["customendpoint"] = ""
-            newmessage["details"] = event
+        newmessage = {}
+        logtype = "UNKNOWN"
+        logtype = urllib.parse.unquote(event["logName"]).split("/")[-1].strip()
+        if (
+            "protoPayload" in event
+            and "@type" in event["protoPayload"]
+            and event["protoPayload"]["@type"]
+            == "type.googleapis.com/google.cloud.audit.AuditLog"
+            or "protoPayload" not in event
+            and "jsonPayload" not in event
+            and "textPayload" in event
+            and "logName" in event
+            and logtype == "syslog"
+        ):
+            newmessage["category"] = logtype
+            newmessage["source"] = "stackdriver"
+            newmessage["tags"] = message["tags"] + ["stackdriver"]
+        elif (
+            ("protoPayload" not in event or "@type" not in event["protoPayload"])
+            and "protoPayload" not in event
+            and (
+                "jsonPayload" not in event
+                or "logName" not in event
+                or logtype == "activity_log"
+            )
+            and ("jsonPayload" not in event or "logName" in event)
+            and (
+                "jsonPayload" in event
+                or "textPayload" not in event
+                or "logName" not in event
+            )
+            and ("jsonPayload" in event or "textPayload" not in event)
+            and "jsonPayload" in event
+        ):
+            newmessage["category"] = "gceactivity"
+            newmessage["source"] = "stackdriver"
+            newmessage["tags"] = message["tags"] + ["stackdriver"]
+        newmessage["receivedtimestamp"] = toUTC(message["receivedtimestamp"]).isoformat()
+        newmessage["timestamp"] = toUTC(event["timestamp"]).isoformat()
+        newmessage["utctimestamp"] = toUTC(event["timestamp"]).isoformat()
+        newmessage["mozdefhostname"] = message["mozdefhostname"]
+        newmessage["customendpoint"] = ""
+        newmessage["details"] = event
 
         return (newmessage, metadata)

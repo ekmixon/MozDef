@@ -36,10 +36,7 @@ class AlertScheduleEntry(ScheduleEntry):
             self._task.total_run_count = 0
         self.total_run_count = self._task.total_run_count
 
-        if not self._task.last_run_at:
-            self.last_run_at = self._default_now()
-        else:
-            self.last_run_at = self._task.last_run_at
+        self.last_run_at = self._task.last_run_at or self._default_now()
 
     def _default_now(self):
         return self.app.now()
@@ -68,8 +65,7 @@ class AlertScheduleEntry(ScheduleEntry):
         )
 
     def reserve(self, entry):
-        new_entry = Scheduler.reserve(self, entry)
-        return new_entry
+        return Scheduler.reserve(self, entry)
 
     def update(self):
         if self.total_run_count > self._task.total_run_count:

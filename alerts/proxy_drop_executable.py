@@ -26,8 +26,9 @@ class AlertProxyDropExecutable(AlertTask):
         # Only notify on certain file extensions from config
         filename_regex = r"/.*\.({0})/".format(self.config.extensions.replace(",", "|"))
         search_query.add_must(
-            [QueryStringMatch("details.destination: {}".format(filename_regex))]
+            [QueryStringMatch(f"details.destination: {filename_regex}")]
         )
+
 
         self.filtersManual(search_query)
 
@@ -44,9 +45,10 @@ class AlertProxyDropExecutable(AlertTask):
         tags = ["squid", "proxy"]
         severity = "WARNING"
 
-        dropped_urls = set()
-        for event in aggreg["allevents"]:
-            dropped_urls.add(event["_source"]["details"]["destination"])
+        dropped_urls = {
+            event["_source"]["details"]["destination"]
+            for event in aggreg["allevents"]
+        }
 
         summary = "Suspicious Proxy DROP event(s) detected from {0} to the following executable file destination(s): {1}".format(
             aggreg["value"], ",".join(sorted(dropped_urls))

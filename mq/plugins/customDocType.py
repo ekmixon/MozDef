@@ -16,8 +16,11 @@ class message(object):
 
     def onMessage(self, message, metadata):
         # set the type field for sub-categorical filtering
-        if 'endpoint' in message and 'customendpoint' in message:
-            if message['customendpoint']:
-                if isinstance(message['endpoint'], str):
-                    message['type'] = message['endpoint']
+        if (
+            'endpoint' in message
+            and 'customendpoint' in message
+            and message['customendpoint']
+            and isinstance(message['endpoint'], str)
+        ):
+            message['type'] = message['endpoint']
         return (message, metadata)

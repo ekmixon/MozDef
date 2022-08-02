@@ -26,15 +26,10 @@ class message(object):
         for key in ['description', 'location', 'name', 'test']:
             if key not in item['check']:
                 return False
-        for key in ['type', 'value']:
-            if key not in item['check']['test']:
-                return False
-        return True
+        return all(key in item['check']['test'] for key in ['type', 'value'])
 
     def cleanup_item(self, item):
-        ci = {}
-        ci['target'] = item['target']
-        ci['policy'] = {}
+        ci = {'target': item['target'], 'policy': {}}
         ci['policy']['level'] = item['policy']['level']
         ci['policy']['name'] = item['policy']['name']
         ci['policy']['url'] = item['policy']['url']

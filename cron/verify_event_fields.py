@@ -16,7 +16,7 @@ from mozdef_util.utilities.logger import logger, initLogger
 def verify_events(options):
     es_client = ElasticsearchClient(options.esservers)
     for required_field in options.required_fields:
-        logger.debug('Looking for events without ' + required_field)
+        logger.debug(f'Looking for events without {required_field}')
         search_query = SearchQuery(hours=12)
         search_query.add_must_not(ExistsMatch(required_field))
 

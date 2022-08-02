@@ -28,7 +28,7 @@ def _find_ip_addresses(string):
         lambda match: match[0] if isinstance(match, tuple) else match,
         re.findall(ipv6_rx, string))
 
-    ipv6 = [x for x in ipv6_map]
+    ipv6 = list(ipv6_map)
     return ipv4 + ipv6
 
 
@@ -42,7 +42,7 @@ def enrich(alert, known_ips):
         if isinstance(value, str):
             return _find_ip_addresses(value)
 
-        if isinstance(value, list) or isinstance(value, tuple):
+        if isinstance(value, (list, tuple)):
             found = [find_ips(item) for item in value]
             return functools.reduce(add, found, [])
 
@@ -69,7 +69,7 @@ def enrich(alert, known_ips):
         for desc in matching_descriptions:
             enriched = desc['format'].format(ip, desc['site'])
 
-            alert['summary'] += '; ' + enriched
+            alert['summary'] += f'; {enriched}'
 
             alert['details']['sites'].append({
                 'ip': ip,

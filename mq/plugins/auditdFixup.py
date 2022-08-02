@@ -95,20 +95,27 @@ class message(object):
                     message['details'][k] = -1
 
         # fix occasional gid errant parsing
-        if 'details' in message and isinstance(message['details'], dict):
-            if 'gid' in message['details'] and ',' in message['details']['gid']:
-                # gid didn't parse right, should just be an integer
-                # move it to a new field to not trigger errors in ES indexing
-                # as it tries to convert gid to long
-                message['details']['gidstring'] = message['details']['gid']
-                del message['details']['gid']
+        if (
+            'details' in message
+            and isinstance(message['details'], dict)
+            and 'gid' in message['details']
+            and ',' in message['details']['gid']
+        ):
+            # gid didn't parse right, should just be an integer
+            # move it to a new field to not trigger errors in ES indexing
+            # as it tries to convert gid to long
+            message['details']['gidstring'] = message['details']['gid']
+            del message['details']['gid']
 
         # fix details.dhost to be hostname
-        if 'details' in message and isinstance(message['details'], dict):
-            if 'dhost' in message['details']:
-                # details.dhost is the host that the auditd event is happening on.
-                message['hostname'] = message['details']['dhost']
-                del message['details']['dhost']
+        if (
+            'details' in message
+            and isinstance(message['details'], dict)
+            and 'dhost' in message['details']
+        ):
+            # details.dhost is the host that the auditd event is happening on.
+            message['hostname'] = message['details']['dhost']
+            del message['details']['dhost']
 
         # add category
         if 'category' not in message:

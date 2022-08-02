@@ -28,7 +28,7 @@ class AlertProxyDropIP(AlertTask):
         # This will over-match, but will get weeded out below
         ip_regex = "/[0-9a-fA-F]{1,4}.*/"
 
-        search_query.add_must([QueryStringMatch("details.host: {}".format(ip_regex))])
+        search_query.add_must([QueryStringMatch(f"details.host: {ip_regex}")])
 
         for ip in self.config.ip_whitelist.split(","):
             search_query.add_must_not([TermMatch("details.host", ip)])
@@ -44,11 +44,7 @@ class AlertProxyDropIP(AlertTask):
         severity = "WARNING"
 
         dropped_destinations = set()
-        final_aggr = {}
-        final_aggr["value"] = aggreg["value"]
-        final_aggr["allevents"] = []
-        final_aggr["events"] = []
-
+        final_aggr = {"value": aggreg["value"], "allevents": [], "events": []}
         i = 0
         for event in aggreg["allevents"]:
             ip = None
@@ -64,7 +60,7 @@ class AlertProxyDropIP(AlertTask):
         final_aggr["count"] = i
 
         # If it's all over-matches, don't throw the alert
-        if len(dropped_destinations) == 0:
+        if not dropped_destinations:
             return None
 
         summary = "Suspicious Proxy DROP event(s) detected from {0} to the following IP-based destination(s): {1}".format(

@@ -12,28 +12,36 @@ class message(object):
 
     def onMessage(self, message, metadata):
         if 'details' in message:
-            if 'message' in message['details']:
-                if type(message['details']['message']) is str \
-                        and len(message['details']['message']) > self.MAX_STRING_LENGTH:
-                    message['details']['message'] = message['details']['message'][:self.MAX_STRING_LENGTH]
-                    message['details']['message'] += ' ...'
+            if (
+                'message' in message['details']
+                and type(message['details']['message']) is str
+                and len(message['details']['message']) > self.MAX_STRING_LENGTH
+            ):
+                message['details']['message'] = message['details']['message'][:self.MAX_STRING_LENGTH]
+                message['details']['message'] += ' ...'
 
-            if 'cmdline' in message['details']:
-                if type(message['details']['cmdline']) is str \
-                        and len(message['details']['cmdline']) > self.MAX_STRING_LENGTH:
-                    message['details']['cmdline'] = message['details']['cmdline'][:self.MAX_STRING_LENGTH]
-                    message['details']['cmdline'] += ' ...'
+            if (
+                'cmdline' in message['details']
+                and type(message['details']['cmdline']) is str
+                and len(message['details']['cmdline']) > self.MAX_STRING_LENGTH
+            ):
+                message['details']['cmdline'] = message['details']['cmdline'][:self.MAX_STRING_LENGTH]
+                message['details']['cmdline'] += ' ...'
 
-            if 'pr_body' in message['details']:
-                if type(message['details']['pr_body']) is str \
-                        and len(message['details']['pr_body']) > self.MAX_STRING_LENGTH:
-                    message['details']['pr_body'] = message['details']['pr_body'][:self.MAX_STRING_LENGTH]
-                    message['details']['pr_body'] += ' ...'
+            if (
+                'pr_body' in message['details']
+                and type(message['details']['pr_body']) is str
+                and len(message['details']['pr_body']) > self.MAX_STRING_LENGTH
+            ):
+                message['details']['pr_body'] = message['details']['pr_body'][:self.MAX_STRING_LENGTH]
+                message['details']['pr_body'] += ' ...'
 
-        if 'summary' in message:
-            if type(message['summary']) is str \
-                    and len(message['summary']) > self.MAX_STRING_LENGTH:
-                message['summary'] = message['summary'][:self.MAX_STRING_LENGTH]
-                message['summary'] += ' ...'
+        if (
+            'summary' in message
+            and type(message['summary']) is str
+            and len(message['summary']) > self.MAX_STRING_LENGTH
+        ):
+            message['summary'] = message['summary'][:self.MAX_STRING_LENGTH]
+            message['summary'] += ' ...'
 
         return (message, metadata)

@@ -118,7 +118,7 @@ class message(object):
         if 'source' not in message:
             return (message, metadata)
 
-        if not message['source'] == 'cloudtrail':
+        if message['source'] != 'cloudtrail':
             return (message, metadata)
 
         '''
@@ -127,11 +127,18 @@ class message(object):
         leaving us with knowledge of what the field contains without the overkill of storing the entire page.
         '''
 
-        ES_FIELD_VALUE_LIMIT = 4095
+        if (
+            'requestparameters' in message['details']
+            and message['details']['requestparameters']
+            and 'htmlpart' in message['details']['requestparameters']
+            and message['details']['requestparameters']['htmlpart']
+        ):
+            ES_FIELD_VALUE_LIMIT = 4095
 
-        if 'requestparameters' in message['details'] and message['details']['requestparameters']:
-            if 'htmlpart' in message['details']['requestparameters'] and message['details']['requestparameters']['htmlpart']:
-                message['details']['requestparameters']['htmlpart'] = message['details']['requestparameters']['htmlpart'][0:ES_FIELD_VALUE_LIMIT]
+            message['details']['requestparameters']['htmlpart'] = message[
+                'details'
+            ]['requestparameters']['htmlpart'][:ES_FIELD_VALUE_LIMIT]
+
 
         for modified_key in self.modify_keys:
             if key_exists(modified_key, message):

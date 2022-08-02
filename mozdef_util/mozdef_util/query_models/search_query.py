@@ -63,8 +63,11 @@ class SearchQuery(object):
 
         results = []
         if len(self.aggregation) == 0:
-            results = elasticsearch_client.search(search_query, indices, size, request_timeout)
-        else:
-            results = elasticsearch_client.aggregated_search(search_query, indices, self.aggregation, size, request_timeout)
+            return elasticsearch_client.search(
+                search_query, indices, size, request_timeout
+            )
 
-        return results
+        else:
+            return elasticsearch_client.aggregated_search(
+                search_query, indices, self.aggregation, size, request_timeout
+            )

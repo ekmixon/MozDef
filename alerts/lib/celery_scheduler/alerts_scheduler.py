@@ -49,18 +49,21 @@ class AlertsScheduler(Scheduler):
     def requires_update(self):
         """check whether we should pull an updated schedule
         from the backend database"""
-        if not self._last_updated:
-            return True
-        return self._last_updated + self.UPDATE_INTERVAL < datetime.datetime.now()
+        return (
+            self._last_updated + self.UPDATE_INTERVAL < datetime.datetime.now()
+            if self._last_updated
+            else True
+        )
 
     def get_from_api(self):
         try:
-            d = {}
             api_results = self.celery_rest.fetch_schedule_dict()
-            for name, doc in api_results.items():
-                if doc['enabled']:
-                    d[name] = self.Entry(PeriodicTask(**doc))
-            return d
+            return {
+                name: self.Entry(PeriodicTask(**doc))
+                for name, doc in api_results.items()
+                if doc['enabled']
+            }
+
         except Exception as e:
             get_logger(__name__).error("Received exception when fetching schedule: {0}".format(e))
             return self._schedule
@@ -83,9 +86,11 @@ class AlertsScheduler(Scheduler):
     def sync(self):
         for entry in self._schedule.values():
             entry.update()
-        dict_schedule = {}
-        for name, alert_schedule in self._schedule.items():
-            dict_schedule[name] = alert_schedule._task.to_dict()
+        dict_schedule = {
+            name: alert_schedule._task.to_dict()
+            for name, alert_schedule in self._schedule.items()
+        }
+
         try:
             self.celery_rest.sync_schedules(dict_schedule)
         except Exception as e:

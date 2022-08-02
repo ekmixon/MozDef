@@ -23,7 +23,7 @@ def isIPv6(ip):
 def addError(message, error):
     '''add an error note to a message'''
     if 'errors' not in message:
-        message['errors'] = list()
+        message['errors'] = []
     if isinstance(message['errors'], list):
         message['errors'].append(error)
 
@@ -56,56 +56,58 @@ class message(object):
         '''
 
         # here is where you do something with the incoming alert message
-        if 'events' in message:
-            if 'documentsource' in message['events'][0]:
-                if 'details' in message['events'][0]['documentsource']:
-                    event = message['events'][0]['documentsource']['details']
-                    if 'details' not in message:
-                        message['details'] = {}
-                    # forwarded header can be spoofed, so try it first,
-                    # but override later if we've a better field.
-                    if 'http_x_forwarded_for' in event:
-                        # should be a comma delimited list of ips with the original client listed first
-                        ipText = event['http_x_forwarded_for'].split(',')[0]
-                        if isIPv4(ipText) and 'sourceipaddress' not in event:
-                            message['details']['sourceipaddress'] = ipText
-                        if isIPv4(ipText) and 'sourceipv4address' not in event:
-                            message['details']['sourceipv4address'] = ipText
-                        if isIPv6(ipText) and 'sourceipv6address' not in event:
-                            message['details']['sourceipv6address'] = ipText
+        if (
+            'events' in message
+            and 'documentsource' in message['events'][0]
+            and 'details' in message['events'][0]['documentsource']
+        ):
+            event = message['events'][0]['documentsource']['details']
+            if 'details' not in message:
+                message['details'] = {}
+            # forwarded header can be spoofed, so try it first,
+            # but override later if we've a better field.
+            if 'http_x_forwarded_for' in event:
+                # should be a comma delimited list of ips with the original client listed first
+                ipText = event['http_x_forwarded_for'].split(',')[0]
+                if isIPv4(ipText) and 'sourceipaddress' not in event:
+                    message['details']['sourceipaddress'] = ipText
+                if isIPv4(ipText) and 'sourceipv4address' not in event:
+                    message['details']['sourceipv4address'] = ipText
+                if isIPv6(ipText) and 'sourceipv6address' not in event:
+                    message['details']['sourceipv6address'] = ipText
 
-                    if 'sourceipaddress' in event:
-                        ipText = event['sourceipaddress']
-                        if isIPv6(ipText):
-                            event['sourceipv6address'] = ipText
-                            message['details']['sourceipaddress'] = '0.0.0.0'
-                            addError(message, 'plugin: {0} error: {1}'.format('ipFixUp.py', 'sourceipaddress is ipv6, moved'))
-                        elif isIPv4(ipText):
-                            message['details']['sourceipv4address'] = ipText
-                            message['details']['sourceipaddress'] = ipText
-                        else:
-                            # Smells like a hostname, let's save it as source field
-                            message['details']['source'] = event['sourceipaddress']
-                            message['details']['sourceipaddress'] = None
+            if 'sourceipaddress' in event:
+                ipText = event['sourceipaddress']
+                if isIPv6(ipText):
+                    event['sourceipv6address'] = ipText
+                    message['details']['sourceipaddress'] = '0.0.0.0'
+                    addError(message, 'plugin: {0} error: {1}'.format('ipFixUp.py', 'sourceipaddress is ipv6, moved'))
+                elif isIPv4(ipText):
+                    message['details']['sourceipv4address'] = ipText
+                    message['details']['sourceipaddress'] = ipText
+                else:
+                    # Smells like a hostname, let's save it as source field
+                    message['details']['source'] = event['sourceipaddress']
+                    message['details']['sourceipaddress'] = None
 
-                    if 'destinationipaddress' in event:
-                        ipText = event['destinationipaddress']
-                        if isIPv6(ipText):
-                            message['details']['destinationipv6address'] = ipText
-                            message['details']['destinationipaddress'] = '0.0.0.0'
-                            addError(message, 'plugin: {0} error: {1}'.format('ipFixUp.py', 'destinationipaddress is ipv6, moved'))
-                        elif isIPv4(ipText):
-                            message['details']['destinationipv4address'] = ipText
-                            message['details']['destinationipaddress'] = ipText
-                        else:
-                            # Smells like a hostname, let's save it as destination field
-                            message['details']['destination'] = event['destinationipaddress']
-                            message['details']['destinationipaddress'] = None
+            if 'destinationipaddress' in event:
+                ipText = event['destinationipaddress']
+                if isIPv6(ipText):
+                    message['details']['destinationipv6address'] = ipText
+                    message['details']['destinationipaddress'] = '0.0.0.0'
+                    addError(message, 'plugin: {0} error: {1}'.format('ipFixUp.py', 'destinationipaddress is ipv6, moved'))
+                elif isIPv4(ipText):
+                    message['details']['destinationipv4address'] = ipText
+                    message['details']['destinationipaddress'] = ipText
+                else:
+                    # Smells like a hostname, let's save it as destination field
+                    message['details']['destination'] = event['destinationipaddress']
+                    message['details']['destinationipaddress'] = None
 
-                    if 'cluster_client_ip' in event:
-                        ipText = event['cluster_client_ip']
-                        if isIPv4(ipText):
-                            message['details']['sourceipaddress'] = ipText
+            if 'cluster_client_ip' in event:
+                ipText = event['cluster_client_ip']
+                if isIPv4(ipText):
+                    message['details']['sourceipaddress'] = ipText
 
         # you can modify the message if needed
         # plugins registered with lower (>2) priority

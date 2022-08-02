@@ -33,11 +33,7 @@ RABBITMQ = {
     'alertqueue': 'mozdef.alert'
 }
 
-es_server = "http://elasticsearch:9200"
-
-if os.getenv('OPTIONS_ESSERVERS'):
-    es_server = os.getenv('OPTIONS_ESSERVERS')
-
+es_server = os.getenv('OPTIONS_ESSERVERS') or "http://elasticsearch:9200"
 ES = {
     'servers': [es_server]
 }

@@ -33,17 +33,16 @@ class message(object):
         if 'githubeventsqs' not in message['tags']:
             return (message, metadata)
 
-        newmessage = {}
-        newmessage['details'] = {}
+        newmessage = {
+            'details': {},
+            'category': 'github',
+            'tags': ['github', 'webhook'],
+            'eventsource': 'githubeventsqs',
+            'source': message['details']['event']
+            if key_exists('details.event', message)
+            else 'UNKNOWN',
+        }
 
-        newmessage['category'] = 'github'
-        newmessage['tags'] = ['github', 'webhook']
-        newmessage['eventsource'] = 'githubeventsqs'
-
-        if key_exists('details.event', message):
-            newmessage['source'] = message['details']['event']
-        else:
-            newmessage['source'] = 'UNKNOWN'
         if key_exists('details.request_id', message):
             newmessage['details']['request_id'] = message['details']['request_id']
         else:
@@ -98,6 +97,6 @@ class message(object):
             newmessage['summary'] += org_name
         if key_exists('details.username', newmessage):
             github_user = "user: {0}".format(newmessage['details']['username'])
-            newmessage['summary'] += "triggered by " + github_user
+            newmessage['summary'] += f"triggered by {github_user}"
 
         return (newmessage, metadata)

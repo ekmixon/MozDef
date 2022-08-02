@@ -30,9 +30,9 @@ class SlackBot():
     def load_commands(self):
         plugin_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'commands'))
         plugin_set = BotPluginSet(plugin_dir)
-        self.plugins = {}
-        for plugin in plugin_set.enabled_plugins:
-            self.plugins[plugin['command_name']] = plugin
+        self.plugins = {
+            plugin['command_name']: plugin for plugin in plugin_set.enabled_plugins
+        }
 
     def run(self):
         if self.slack_client.rtm_connect():
@@ -48,7 +48,7 @@ class SlackBot():
         response = ""
         message_tokens = message_text.split()
         command = message_tokens[0]
-        parameters = message_tokens[1:len(message_tokens)]
+        parameters = message_tokens[1:]
 
         if command == '!help':
             response = "\nHelp is on it's way...try these:\n"
@@ -57,26 +57,24 @@ class SlackBot():
                     command_name,
                     plugin['help_text']
                 )
-        else:
-            if command not in self.plugins:
-                response = "Unknown command: " + command + ". Try !help"
-            else:
-                plugin = self.plugins[command]
-                logger.info("Sending to {0}".format(plugin['plugin_class'].__module__))
-                try:
-                    response = "\n" + plugin['plugin_class'].handle_command(parameters)
-                except Exception as e:
-                    response = "\nReceived an error when processing your request."
-                    logger.exception(e)
+        elif command in self.plugins:
+            plugin = self.plugins[command]
+            logger.info("Sending to {0}".format(plugin['plugin_class'].__module__))
+            try:
+                response = "\n" + plugin['plugin_class'].handle_command(parameters)
+            except Exception as e:
+                response = "\nReceived an error when processing your request."
+                logger.exception(e)
 
+        else:
+            response = f"Unknown command: {command}. Try !help"
         return response
 
     def parse_command(self, content):
         # messages look like this:
         # pwnbus: @mozdef !help
-        tokens = content.split('@' + self.bot_name)
-        command = tokens[1].strip()
-        return command
+        tokens = content.split(f'@{self.bot_name}')
+        return tokens[1].strip()
 
     def handle_message(self, message):
         channel = message['channel']
@@ -119,11 +117,7 @@ class SlackBot():
         )
 
     def _post_attachment(self, message, channel, color, sub_fields=None):
-        if channel is None:
-            message_channels = self.channels
-        else:
-            message_channels = [channel]
-
+        message_channels = self.channels if channel is None else [channel]
         for message_channel in message_channels:
             attachment = {
                 'fallback': message,
@@ -140,17 +134,15 @@ class SlackBot():
         message_text = alert_dict['summary']
         # Default to black if severity isn't known
         message_color = "#000000"
-        if severity == 'CRITICAL':
+        if severity in ['CRITICAL', 'ERROR']:
             message_color = "#d04437"
-        elif severity == 'ERROR':
-            message_color = "#d04437"
-        elif severity == 'WARNING':
-            message_color = "#ffd351"
         elif severity == 'INFO':
             message_color = "#cccccc"
         elif severity == 'NOTICE':
             message_color = "#4a6785"
 
+        elif severity == 'WARNING':
+            message_color = "#ffd351"
         sub_fields = [
             {
                 "title": "Severity",

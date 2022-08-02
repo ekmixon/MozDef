@@ -20,17 +20,17 @@ class ExecutionState(NamedTuple):
     #  alert_name: str
     execution_time: datetime
 
-    def new(executed_at: Optional[datetime]=None) -> 'ExecutionState':
+    def new(self) -> 'ExecutionState':
         '''Construct a new `ExecutionState` representing the execution of an
         alert at a specific time.
         By default, the execution time will be set to when this function is
         called if not explicitly provided.
         '''
 
-        if executed_at is None:
-            executed_at = toUTC(datetime.now())
+        if self is None:
+            self = toUTC(datetime.now())
 
-        return ExecutionState(_TYPE_NAME, executed_at)
+        return ExecutionState(_TYPE_NAME, self)
 
 
 class Record(NamedTuple):
@@ -40,12 +40,12 @@ class Record(NamedTuple):
     identifier: Optional[str]
     state: ExecutionState
 
-    def new(state: ExecutionState) -> 'Record':
+    def new(self) -> 'Record':
         '''Construct a new `Record` that, when stored, will result in a new
         document being inserted into ElasticSearch.
         '''
 
-        return Record('', state)
+        return Record('', self)
 
 
 Index = str

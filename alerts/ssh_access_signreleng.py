@@ -22,12 +22,15 @@ class AlertAuthSignRelengSSH(AlertTask):
         summary_query = PhraseMatch('summary', 'Accepted publickey for ')
         summary_query |= PhraseMatch('summary', 'Accepted keyboard-interactive/pam for ')
 
-        search_query.add_must([
-            TermMatch('tags', 'releng'),
-            TermMatch('details.program', 'sshd'),
-            QueryStringMatch('hostname: /{}/'.format(self.config['hostfilter'])),
-            summary_query,
-        ])
+        search_query.add_must(
+            [
+                TermMatch('tags', 'releng'),
+                TermMatch('details.program', 'sshd'),
+                QueryStringMatch(f"hostname: /{self.config['hostfilter']}/"),
+                summary_query,
+            ]
+        )
+
 
         for exclusion in self.config['exclusions']:
             exclusion_query = None
@@ -50,14 +53,11 @@ class AlertAuthSignRelengSSH(AlertTask):
         tags = ['ssh']
         severity = 'NOTICE'
 
-        targethost = 'unknown'
         sourceipaddress = 'unknown'
         x = event['_source']
-        if 'hostname' in x:
-            targethost = x['hostname']
-        if 'details' in x:
-            if 'sourceipaddress' in x['details']:
-                sourceipaddress = x['details']['sourceipaddress']
+        targethost = x['hostname'] if 'hostname' in x else 'unknown'
+        if 'details' in x and 'sourceipaddress' in x['details']:
+            sourceipaddress = x['details']['sourceipaddress']
 
         targetuser = 'unknown'
         if 'Accepted publickey for' in event['_source']['summary']:

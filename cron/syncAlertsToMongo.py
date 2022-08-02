@@ -26,8 +26,7 @@ def getESAlerts(es):
     # We use an ExistsMatch here just to satisfy the
     # requirements of a search query must have some "Matchers"
     search_query.add_must(ExistsMatch('summary'))
-    results = search_query.execute(es, indices=['alerts'], size=10000)
-    return results
+    return search_query.execute(es, indices=['alerts'], size=10000)
 
 
 def ensureIndexes(mozdefdb):
@@ -58,7 +57,7 @@ def updateMongo(mozdefdb, esAlerts):
             mrecord['utctimestamp']=toUTC(mrecord['utctimestamp'])
             # also set an epoch time field so minimongo can sort
             mrecord['utcepoch'] = calendar.timegm(mrecord['utctimestamp'].utctimetuple())
-            mrecord['esmetadata'] = dict()
+            mrecord['esmetadata'] = {}
             mrecord['esmetadata']['id'] = a['_id']
             mrecord['esmetadata']['index'] = a['_index']
             alerts.insert(mrecord)
@@ -68,7 +67,7 @@ def main():
     logger.debug('starting')
     logger.debug(options)
     try:
-        es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+        es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
         client = MongoClient(options.mongohost, options.mongoport)
         mozdefdb = client.meteor
         ensureIndexes(mozdefdb)

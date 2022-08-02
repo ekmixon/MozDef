@@ -18,20 +18,21 @@ class message(object):
         self.regex = re.compile(r'(?P<trapname>\S+) (?P<trapseverity>\S+) "Status Events" (?P<source_host>\S+) - (?P<trappayload>.*)')
 
     def onMessage(self, message, metadata):
-        if 'details' in message:
-            if 'program' in message['details']:
-                if 'snmptt' == message['details']['program']:
-                    msg_unparsed = message['summary']
-                    search = re.search(self.regex, msg_unparsed)
-                    if search:
-                        message['details']['trapname'] = search.group('trapname')
-                        message['details']['trapseverity'] = search.group('trapseverity')
-                        message['details']['trappayload'] = search.group('trappayload')
-                        message['hostname'] = search.group('source_host')
-                        # tag the message
-                        if 'tags' in message and isinstance(message['tags'], list):
-                            message['tags'].append('alert')
-                        else:
-                            message['tags'] = ['alert']
+        if (
+            'details' in message
+            and 'program' in message['details']
+            and message['details']['program'] == 'snmptt'
+        ):
+            msg_unparsed = message['summary']
+            if search := re.search(self.regex, msg_unparsed):
+                message['details']['trapname'] = search['trapname']
+                message['details']['trapseverity'] = search['trapseverity']
+                message['details']['trappayload'] = search['trappayload']
+                message['hostname'] = search['source_host']
+                # tag the message
+                if 'tags' in message and isinstance(message['tags'], list):
+                    message['tags'].append('alert')
+                else:
+                    message['tags'] = ['alert']
 
         return (message, metadata)

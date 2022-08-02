@@ -25,24 +25,22 @@ class message(object):
     def onMessage(self, message, metadata):
         if 'details' in message and 'hostname' in message['details']:
             hostnamesplit = str.lower(message['details']['hostname']).split('.')
-            if len(hostnamesplit) == 5:
-                if 'mozilla' == hostnamesplit[-2]:
-                    message['details']['site'] = hostnamesplit[-3]
-                    if message['details']['site'] in self.dc_code_list:
-                        message['details']['sitetype'] = 'datacenter'
-                    elif message['details']['site'] in self.offices_code_list:
-                        message['details']['sitetype'] = 'office'
-                    else:
-                        message['details']['sitetype'] = 'unknown'
+            if len(hostnamesplit) == 5 and hostnamesplit[-2] == 'mozilla':
+                message['details']['site'] = hostnamesplit[-3]
+                if message['details']['site'] in self.dc_code_list:
+                    message['details']['sitetype'] = 'datacenter'
+                elif message['details']['site'] in self.offices_code_list:
+                    message['details']['sitetype'] = 'office'
+                else:
+                    message['details']['sitetype'] = 'unknown'
         elif 'hostname' in message:
             hostnamesplit = str.lower(message['hostname']).split('.')
-            if len(hostnamesplit) == 5:
-                if 'mozilla' == hostnamesplit[-2]:
-                    message['details']['site'] = hostnamesplit[-3]
-                    if message['details']['site'] in self.dc_code_list:
-                        message['details']['sitetype'] = 'datacenter'
-                    elif message['details']['site'] in self.offices_code_list:
-                        message['details']['sitetype'] = 'office'
-                    else:
-                        message['details']['sitetype'] = 'unknown'
+            if len(hostnamesplit) == 5 and hostnamesplit[-2] == 'mozilla':
+                message['details']['site'] = hostnamesplit[-3]
+                if message['details']['site'] in self.dc_code_list:
+                    message['details']['sitetype'] = 'datacenter'
+                elif message['details']['site'] in self.offices_code_list:
+                    message['details']['sitetype'] = 'office'
+                else:
+                    message['details']['sitetype'] = 'unknown'
         return (message, metadata)

@@ -25,20 +25,12 @@ class message(object):
         if 'type' in message and message['type'] != 'auditd':
             return (message, metadata)
 
-        if 'details' in message:
-            # drop disabled for now
-            # if 'signatureid' in message['details']:
-                # if message['details'].lower() == 'execve' and \
-                    # 'command' not in message['details']:
-                    # auditd entry without a command
-                    # likely a result of another command (java starting a job, etc.)
-                    # signal a drop
-
-                    # message = None
-                    # return message
-            if 'http_user_agent' in message['details']:
-                if message['details']['http_user_agent'] == 'ELB-HealthChecker/1.0':
-                    message = None
-                    return message
+        if (
+            'details' in message
+            and 'http_user_agent' in message['details']
+            and message['details']['http_user_agent'] == 'ELB-HealthChecker/1.0'
+        ):
+            message = None
+            return message
 
         return (message, metadata)

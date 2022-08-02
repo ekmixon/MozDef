@@ -89,14 +89,14 @@ class AlertGenericLoader(AlertTask):
     def validate_alert(self, alert):
         for key in self.required_fields:
             if key not in alert:
-                logger.error('Your alert does not have the required field {}'.format(key))
+                logger.error(f'Your alert does not have the required field {key}')
                 raise KeyError
 
     def load_configs(self):
         '''Load all configured rules'''
         self.configs = []
         rules_location = os.path.join(self.config.alert_data_location, "rules")
-        files = glob.glob(rules_location + "/*.json")
+        files = glob.glob(f"{rules_location}/*.json")
         for f in files:
             with open(f) as fd:
                 try:
@@ -107,15 +107,13 @@ class AlertGenericLoader(AlertTask):
                     cfg['custom_alert_name'] = alert_name
                     self.configs.append(cfg)
                 except Exception:
-                    logger.error("Loading rule file {} failed".format(f))
+                    logger.error(f"Loading rule file {f} failed")
 
     def process_alert(self, alert_config):
         # Set instance variable to populate event attributes about an alert
         self.custom_alert_name = "{0}:{1}".format(self.classname(), alert_config['custom_alert_name'])
         search_query = SearchQuery(minutes=int(alert_config.time_window))
-        terms = []
-        for i in alert_config.filters:
-            terms.append(TermMatch(i[0], i[1]))
+        terms = [TermMatch(i[0], i[1]) for i in alert_config.filters]
         terms.append(QueryStringMatch(str(alert_config.search_string)))
         search_query.add_must(terms)
         self.filtersManual(search_query)
@@ -132,7 +130,7 @@ class AlertGenericLoader(AlertTask):
             except Exception as err:
                 self.error_thrown = err
                 traceback.print_exc(file=sys.stdout)
-                logger.exception("Processing rule file {} failed".format(cfg.__str__()))
+                logger.exception(f"Processing rule file {cfg.__str__()} failed")
 
     def onAggregation(self, aggreg):
         # aggreg['count']: number of items in the aggregation, ex: number of failed login attempts
@@ -152,11 +150,8 @@ class AlertGenericLoader(AlertTask):
             if 'hostname' in event_source:
                 hostnames.append(event_source['hostname'])
 
-        summary = '{} ({}): {}'.format(
-            aggreg['config']['alert_summary'],
-            aggreg['count'],
-            aggreg['value'],
-        )
+        summary = f"{aggreg['config']['alert_summary']} ({aggreg['count']}): {aggreg['value']}"
+
 
         channel = None
         # If our generic alert contains channel, use that
@@ -177,15 +172,14 @@ class AlertGenericLoader(AlertTask):
                 # If the field exists in each EVENT, include it in alert summary
                 for event in aggreg['events']:
                     dot_event = DotDict(event['_source'])
-                    value = dot_event.get(additional_field)
-                    if value:
+                    if value := dot_event.get(additional_field):
                         values_found.append(value)
                 # Let's add the key=value(s) to summary
-                if len(values_found) != 0:
-                    values_str = '{}'.format(', '.join(set(values_found)))
+                if values_found:
+                    values_str = f"{', '.join(set(values_found))}"
                     summary += " ({0}={1})".format(additional_field, values_str)
 
         if hostnames:
-            summary += ' [{}]'.format(', '.join(set(hostnames)))
+            summary += f" [{', '.join(set(hostnames))}]"
 
         return self.createAlertDict(summary, category, tags, aggreg['events'], severity, url, channel=channel, notify_mozdefbot=notify_mozdefbot)

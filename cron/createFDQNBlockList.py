@@ -92,10 +92,12 @@ def main():
             {"$project": {"address": 1}},
             {"$limit": options.fqdnlimit}
         ])
-        FQDNList = []
-        for fqdn in fqdnCursor:
-            if fqdn not in options.fqdnwhitelist:
-                FQDNList.append(fqdn['address'])
+        FQDNList = [
+            fqdn['address']
+            for fqdn in fqdnCursor
+            if fqdn not in options.fqdnwhitelist
+        ]
+
         # to text
         with open(options.outputfile, 'w') as outputfile:
             for fqdn in FQDNList:
@@ -154,8 +156,8 @@ def s3_upload_file(file_path, bucket_name, key_name):
     )
     s3.meta.client.upload_file(
         file_path, bucket_name, key_name, ExtraArgs={'ACL': 'public-read'})
-    url = "https://s3.amazonaws.com/{}/{}".format(bucket_name, key_name)
-    print("URL: {}".format(url))
+    url = f"https://s3.amazonaws.com/{bucket_name}/{key_name}"
+    print(f"URL: {url}")
     return url
 
 

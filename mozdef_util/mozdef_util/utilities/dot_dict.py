@@ -36,8 +36,7 @@ class DotDict(dict):
         :return: The  value.
         :raise KeyError: If the given key is not found
         """
-        if '.' in key:
-            key, node = key.split('.', 1)
-            return self.__lookup(dct[key], node)
-        else:
+        if '.' not in key:
             return dct[key]
+        key, node = key.split('.', 1)
+        return self.__lookup(dct[key], node)

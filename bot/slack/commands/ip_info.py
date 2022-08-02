@@ -15,9 +15,8 @@ def ip_location(ip):
             if 'error' in geo_dict:
                 return geo_dict['error']
             location = geo_dict['country_name']
-            if geo_dict['country_code'] in ('US'):
-                if geo_dict['metro_code']:
-                    location = location + '/{0}'.format(geo_dict['metro_code'])
+            if geo_dict['country_code'] in ('US') and geo_dict['metro_code']:
+                location = location + '/{0}'.format(geo_dict['metro_code'])
     except Exception:
         location = ""
     return location
@@ -33,10 +32,14 @@ class Command():
         for ip_token in parameters:
             if is_ip(ip_token):
                 ip = netaddr.IPNetwork(ip_token)[0]
-                if not (ip.is_loopback() or ip.is_private() or ip.is_reserved()):
-                    response += "{0} location: {1}\n".format(ip_token, ip_location(ip_token))
-                else:
-                    response += "{0}: hrm...loopback? private ip?\n".format(ip_token)
+                response += (
+                    "{0}: hrm...loopback? private ip?\n".format(ip_token)
+                    if (ip.is_loopback() or ip.is_private() or ip.is_reserved())
+                    else "{0} location: {1}\n".format(
+                        ip_token, ip_location(ip_token)
+                    )
+                )
+
             else:
                 response = "{0} is not an IP address".format(ip_token)
         return response

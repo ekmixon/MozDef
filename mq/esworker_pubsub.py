@@ -58,9 +58,8 @@ class PubSubtaskConsumer(object):
         try:
             # default elastic search metadata for an event
             metadata = {"index": "events", "id": None}
-            event = {}
+            event = {"receivedtimestamp": toUTC(datetime.now()).isoformat()}
 
-            event["receivedtimestamp"] = toUTC(datetime.now()).isoformat()
             event["mozdefhostname"] = self.options.mozdefhostname
 
             event["details"] = json.loads(message.data.decode("UTF-8"))
@@ -94,10 +93,7 @@ class PubSubtaskConsumer(object):
             jbody = json.JSONEncoder().encode(event)
 
             try:
-                bulk = False
-                if self.options.esbulksize != 0:
-                    bulk = True
-
+                bulk = self.options.esbulksize != 0
                 self.esConnection.save_event(index=metadata["index"], doc_id=metadata["id"], body=jbody, bulk=bulk)
 
             except (ElasticsearchBadServer, ElasticsearchInvalidIndex) as e:
@@ -119,7 +115,9 @@ class PubSubtaskConsumer(object):
 
 def esConnect():
     """open or re-open a connection to elastic search"""
-    return ElasticsearchClient((list("{0}".format(s) for s in options.esservers)), options.esbulksize)
+    return ElasticsearchClient(
+        ["{0}".format(s) for s in options.esservers], options.esbulksize
+    )
 
 
 def initConfig():

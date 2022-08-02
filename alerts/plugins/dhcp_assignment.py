@@ -27,11 +27,11 @@ class Config(typing.NamedTuple):
     indices_to_search: typing.List[str]
     search_window_hours: int
 
-    def load(file_path: str) -> 'Config':
+    def load(self) -> 'Config':
         '''Attempt to open a JSON file and load its contents into a Config.
         '''
 
-        with open(file_path) as cfg_file:
+        with open(self) as cfg_file:
             return Config(**json.load(cfg_file))
 
 
@@ -125,7 +125,7 @@ def enrich(alert, search_window_hours, search_fn):
     no_user_found = '(no user found)'
 
     search_mac_owner = SearchQuery({'hours': search_window_hours})
-    query = 'source:local1 AND "{}"'.format(mac)
+    query = f'source:local1 AND "{mac}"'
     search_mac_owner.add_must(QueryStringMatch(query))
 
     user_events = sorted(
@@ -136,12 +136,11 @@ def enrich(alert, search_window_hours, search_fn):
         key=lambda evt: toUTC(evt['receivedtimestamp']),
         reverse=True)  # Sort into descending order from most recent to least.
 
-    if len(user_events) > 0:
-        summary_dict = _comma_eq_dict(user_events[0]['summary'])
-        user = summary_dict.get('user_name', no_user_found)
-    else:
+    if len(user_events) <= 0:
         return alert
 
+    summary_dict = _comma_eq_dict(user_events[0]['summary'])
+    user = summary_dict.get('user_name', no_user_found)
     # Finally, add the details.ipassignment fields and append to the summary.
 
     if 'details' not in alert:
@@ -155,7 +154,7 @@ def enrich(alert, search_window_hours, search_fn):
     if user != no_user_found:
         alert['details']['username'] = user
 
-    alert['summary'] += '; IP assigned to {} ({})'.format(user, mac)
+    alert['summary'] += f'; IP assigned to {user} ({mac})'
 
     return alert
 

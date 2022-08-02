@@ -23,7 +23,7 @@ from mozdef_util.elasticsearch_client import ElasticsearchClient
 def esCloseIndices():
     logger.debug('started')
     try:
-        es = ElasticsearchClient((list('{0}'.format(s) for s in options.esservers)))
+        es = ElasticsearchClient(['{0}'.format(s) for s in options.esservers])
         indices = es.get_open_indices()
     except Exception as e:
         logger.error("Unhandled exception while connecting to ES, terminating: %r" % (e))
@@ -35,15 +35,18 @@ def esCloseIndices():
     for index in indices:
         if 'events' in index:
             index_date = index.rsplit('-', 1)[1]
-            logger.debug("Checking to see if Index: %s can be closed." % (index))
+            logger.debug(f"Checking to see if Index: {index} can be closed.")
             if len(index_date) == 8:
                 index_date_obj = datetime.strptime(index_date, '%Y%m%d')
                 try:
                     if month_ago_date > index_date_obj:
-                        logger.debug("Index: %s will be closed." % (index))
+                        logger.debug(f"Index: {index} will be closed.")
                         es.close_index(index)
                     else:
-                        logger.debug("Index: %s  does not meet aging criteria and will not be closed." % (index))
+                        logger.debug(
+                            f"Index: {index}  does not meet aging criteria and will not be closed."
+                        )
+
                 except Exception as e:
                     logger.error("Unhandled exception while closing indices, terminating: %r" % (e))
 

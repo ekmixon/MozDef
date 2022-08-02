@@ -40,7 +40,9 @@ except ImportError as e:
 
 def esConnect():
     """open or re-open a connection to elastic search"""
-    return ElasticsearchClient((list("{0}".format(s) for s in options.esservers)), options.esbulksize)
+    return ElasticsearchClient(
+        ["{0}".format(s) for s in options.esservers], options.esbulksize
+    )
 
 
 class taskConsumer(object):
@@ -67,7 +69,7 @@ class taskConsumer(object):
                         msg.delete()
                         continue
                 time.sleep(self.options.sleep_time)
-            except (SSLEOFError, SSLError, socket.error):
+            except (SSLError, socket.error):
                 logger.info("Received network related error...reconnecting")
                 time.sleep(5)
                 self.sqs_queue = connect_sqs(options.region, options.accesskey, options.secretkey, options.taskexchange)
@@ -76,9 +78,8 @@ class taskConsumer(object):
         try:
             # default elastic search metadata for an event
             metadata = {"index": "events", "id": None}
-            event = {}
+            event = {"receivedtimestamp": toUTC(datetime.now()).isoformat()}
 
-            event["receivedtimestamp"] = toUTC(datetime.now()).isoformat()
             event["mozdefhostname"] = self.options.mozdefhostname
 
             if "tags" in event:
@@ -90,7 +91,7 @@ class taskConsumer(object):
             event["details"] = {}
 
             for message_key, message_value in message.items():
-                if "Message" == message_key:
+                if message_key == "Message":
                     try:
                         message_json = json.loads(message_value)
                         for (inside_message_key, inside_message_value) in message_json.items():
@@ -118,10 +119,9 @@ class taskConsumer(object):
                             elif inside_message_key in ("fields", "details"):
                                 if type(inside_message_value) is not dict:
                                     event["details"]["message"] = inside_message_value
-                                else:
-                                    if len(inside_message_value) > 0:
-                                        for (details_key, details_value) in inside_message_value.items():
-                                            event["details"][details_key] = details_value
+                                elif len(inside_message_value) > 0:
+                                    for (details_key, details_value) in inside_message_value.items():
+                                        event["details"][details_key] = details_value
                             else:
                                 event["details"][inside_message_key] = inside_message_value
                     except ValueError:
@@ -146,10 +146,7 @@ class taskConsumer(object):
             jbody = json.JSONEncoder().encode(event)
 
             try:
-                bulk = False
-                if self.options.esbulksize != 0:
-                    bulk = True
-
+                bulk = self.options.esbulksize != 0
                 self.esConnection.save_event(index=metadata["index"], doc_id=metadata["id"], body=jbody, bulk=bulk)
 
             except (ElasticsearchBadServer, ElasticsearchInvalidIndex) as e:

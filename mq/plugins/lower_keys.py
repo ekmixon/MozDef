@@ -21,7 +21,7 @@ class message(object):
                 message_keys = list(message.keys())
                 for key in message_keys:
                     message[key.lower()] = message.pop(key)
-                    if isinstance(message[key.lower()], dict) or isinstance(message[key.lower()], list):
+                    if isinstance(message[key.lower()], (dict, list)):
                         message[key.lower()] = renameKeysToLower(message[key.lower()])
             elif isinstance(message, list):
                 for item in message:

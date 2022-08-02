@@ -21,15 +21,11 @@ class SessionOpenedUser(AlertTask):
     def main(self):
 
         superquery = None
-        run = 0
-
-        for user in self._config['users'].values():
+        for run, user in enumerate(self._config['users'].values()):
             if run == 0:
                 superquery = PhraseMatch('summary', user)
             else:
                 superquery |= PhraseMatch('summary', user)
-            run += 1
-
         search_query = SearchQuery(minutes=10)
 
         search_query.add_must([

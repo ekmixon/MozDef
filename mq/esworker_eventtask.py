@@ -47,15 +47,13 @@ def keyMapping(aDict):
        This strips the leading at symbol since it breaks some elastic search
        libraries like elasticutils.
     """
-    returndict = dict()
+    returndict = {
+        "receivedtimestamp": toUTC(datetime.now()).isoformat(),
+        "mozdefhostname": options.mozdefhostname,
+        "details": {},
+    }
 
-    # uncomment to save the source event for debugging, or chain of custody/forensics
-    # returndict['original']=aDict
 
-    # set the timestamp when we received it, i.e. now
-    returndict["receivedtimestamp"] = toUTC(datetime.now()).isoformat()
-    returndict["mozdefhostname"] = options.mozdefhostname
-    returndict["details"] = {}
     try:
         for k, v in aDict.items():
             k = removeAt(k).lower()
@@ -69,11 +67,12 @@ def keyMapping(aDict):
             if k in ("message", "summary"):
                 returndict["summary"] = toUnicode(v)
 
-            if k in ("payload") and "summary" not in aDict:
-                # special case for heka if it sends payload as well as a summary, keep both but move payload to the details section.
-                returndict["summary"] = toUnicode(v)
-            elif k in ("payload"):
-                returndict["details"]["payload"] = toUnicode(v)
+            if k in ("payload"):
+                if "summary" not in aDict:
+                    # special case for heka if it sends payload as well as a summary, keep both but move payload to the details section.
+                    returndict["summary"] = toUnicode(v)
+                else:
+                    returndict["details"]["payload"] = toUnicode(v)
 
             if k in ("eventtime", "timestamp", "utctimestamp", "date"):
                 returndict["utctimestamp"] = toUTC(v).isoformat()
@@ -87,9 +86,8 @@ def keyMapping(aDict):
                     returndict["tags"] = []
                 if type(v) == list:
                     returndict["tags"] += v
-                else:
-                    if len(v) > 0:
-                        returndict["tags"].append(v)
+                elif len(v) > 0:
+                    returndict["tags"].append(v)
 
             # nxlog keeps the severity name in syslogseverity,everyone else should use severity or level.
             if k in ("syslogseverity", "severity", "severityvalue", "level", "priority"):
@@ -116,10 +114,9 @@ def keyMapping(aDict):
             if k in ("fields", "details"):
                 if type(v) is not dict:
                     returndict["details"]["message"] = v
-                else:
-                    if len(v) > 0:
-                        for details_key, details_value in v.items():
-                            returndict["details"][details_key] = details_value
+                elif len(v) > 0:
+                    for details_key, details_value in v.items():
+                        returndict["details"][details_key] = details_value
 
             # custom fields/details as a one off, not in an array
             # i.e. fields.something=value or details.something=value
@@ -164,7 +161,9 @@ def keyMapping(aDict):
 
 def esConnect():
     """open or re-open a connection to elastic search"""
-    return ElasticsearchClient((list("{0}".format(s) for s in options.esservers)), options.esbulksize)
+    return ElasticsearchClient(
+        ["{0}".format(s) for s in options.esservers], options.esbulksize
+    )
 
 
 class taskConsumer(ConsumerMixin):
@@ -174,10 +173,7 @@ class taskConsumer(ConsumerMixin):
         self.taskQueue = taskQueue
         self.topicExchange = topicExchange
         self.mqproducer = self.connection.Producer(serializer="json")
-        if hasUWSGI:
-            self.muleid = uwsgi.mule_id()
-        else:
-            self.muleid = 0
+        self.muleid = uwsgi.mule_id() if hasUWSGI else 0
 
     def get_consumers(self, Consumer, channel):
         consumer = Consumer(
@@ -230,10 +226,7 @@ class taskConsumer(ConsumerMixin):
             jbody = json.JSONEncoder().encode(normalizedDict)
 
             try:
-                bulk = False
-                if options.esbulksize != 0:
-                    bulk = True
-
+                bulk = options.esbulksize != 0
                 self.esConnection.save_event(index=metadata["index"], doc_id=metadata["id"], body=jbody, bulk=bulk)
 
             except (ElasticsearchBadServer, ElasticsearchInvalidIndex) as e:
@@ -278,10 +271,7 @@ def main():
     connString = "amqp://{0}:{1}@{2}:{3}/{4}".format(
         options.mquser, options.mqpassword, options.mqserver, options.mqport, options.mqvhost
     )
-    if options.mqprotocol == "amqps":
-        mqSSL = True
-    else:
-        mqSSL = False
+    mqSSL = options.mqprotocol == "amqps"
     mqConn = Connection(connString, ssl=mqSSL)
     # Task Exchange for events sent via http for us to normalize and post to elastic search
     if options.mqack:

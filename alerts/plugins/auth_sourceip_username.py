@@ -29,11 +29,11 @@ class Config(types.NamedTuple):
     search_window_hours: int
     match_tag: str
 
-    def load(file_path: str) -> 'Config':
+    def load(self) -> 'Config':
         '''Attempt to parse a configuration from a JSON file.
         '''
 
-        with open(file_path) as cfg_file:
+        with open(self) as cfg_file:
             return Config(**json.load(cfg_file))
 
 

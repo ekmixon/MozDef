@@ -35,9 +35,8 @@ class GDtaskConsumer(taskConsumer):
         # default elastic search metadata for an event
         metadata = {"index": "events", "id": None}
 
-        event = {}
+        event = {"receivedtimestamp": toUTC(datetime.now()).isoformat()}
 
-        event["receivedtimestamp"] = toUTC(datetime.now()).isoformat()
         event["mozdefhostname"] = self.options.mozdefhostname
 
         if "tags" in event:
@@ -68,43 +67,46 @@ class GDtaskConsumer(taskConsumer):
         self.save_event(event, metadata)
 
     def on_message(self, message_raw):
-        if "Message" in message_raw:
-            message = json.loads(message_raw["Message"])
-            if key_exists('details.finding.action.actionType', message):
-                if message["details"]["finding"]["action"]["actionType"] == "PORT_PROBE":
-                    if "portProbeDetails" in message["details"]["finding"]["action"]["portProbeAction"]:
-                        for probe in message["details"]["finding"]["action"]["portProbeAction"]["portProbeDetails"]:
-                            isolatedmessage = message
-                            isolatedmessage["details"]["finding"]["probeevent"] = probe
-                            self.build_submit_message(isolatedmessage)
-                elif message["details"]["finding"]["action"]["actionType"] == "AWS_API_CALL":
-                    # Fixup the api call data somewhat, depending on what we were given
-                    if "recentApiCalls" in message["details"]["finding"]["additionalInfo"]:
-                        message["details"]["finding"]["additionalInfo"]["apiCalls"] = message["details"]["finding"][
-                            "additionalInfo"
-                        ]["recentApiCalls"]
-                    if "apiCalls" not in message["details"]["finding"]["additionalInfo"]:
-                        message["details"]["finding"]["additionalInfo"]["apiCalls"] = message["details"]["finding"][
-                            "action"
-                        ]["awsApiCallAction"]
-                    if type(message["details"]["finding"]["additionalInfo"]["apiCalls"]) == list:
-                        for call in message["details"]["finding"]["additionalInfo"]["apiCalls"]:
-                            isolatedmessage = message
-                            isolatedmessage["details"]["finding"]["apicalls"] = call
-                            self.build_submit_message(isolatedmessage)
-                    else:
+        if "Message" not in message_raw:
+            return
+        message = json.loads(message_raw["Message"])
+        if key_exists('details.finding.action.actionType', message):
+            if message["details"]["finding"]["action"]["actionType"] == "PORT_PROBE":
+                if "portProbeDetails" in message["details"]["finding"]["action"]["portProbeAction"]:
+                    for probe in message["details"]["finding"]["action"]["portProbeAction"]["portProbeDetails"]:
                         isolatedmessage = message
-                        isolatedmessage["details"]["finding"]["apicalls"] = message["details"]["finding"][
-                            "additionalInfo"
-                        ]["apiCalls"]
+                        isolatedmessage["details"]["finding"]["probeevent"] = probe
+                        self.build_submit_message(isolatedmessage)
+            elif message["details"]["finding"]["action"]["actionType"] == "AWS_API_CALL":
+                # Fixup the api call data somewhat, depending on what we were given
+                if "recentApiCalls" in message["details"]["finding"]["additionalInfo"]:
+                    message["details"]["finding"]["additionalInfo"]["apiCalls"] = message["details"]["finding"][
+                        "additionalInfo"
+                    ]["recentApiCalls"]
+                if "apiCalls" not in message["details"]["finding"]["additionalInfo"]:
+                    message["details"]["finding"]["additionalInfo"]["apiCalls"] = message["details"]["finding"][
+                        "action"
+                    ]["awsApiCallAction"]
+                if type(message["details"]["finding"]["additionalInfo"]["apiCalls"]) == list:
+                    for call in message["details"]["finding"]["additionalInfo"]["apiCalls"]:
+                        isolatedmessage = message
+                        isolatedmessage["details"]["finding"]["apicalls"] = call
                         self.build_submit_message(isolatedmessage)
                 else:
-                    self.build_submit_message(message)
+                    isolatedmessage = message
+                    isolatedmessage["details"]["finding"]["apicalls"] = message["details"]["finding"][
+                        "additionalInfo"
+                    ]["apiCalls"]
+                    self.build_submit_message(isolatedmessage)
+            else:
+                self.build_submit_message(message)
 
 
 def esConnect():
     """open or re-open a connection to elastic search"""
-    return ElasticsearchClient((list("{0}".format(s) for s in options.esservers)), options.esbulksize)
+    return ElasticsearchClient(
+        ["{0}".format(s) for s in options.esservers], options.esbulksize
+    )
 
 
 def initConfig():

@@ -55,15 +55,17 @@ def keyMapping(aDict):
        This strips the leading at symbol since it breaks some elastic search
        libraries like elasticutils.
     """
-    returndict = dict()
+    returndict = {
+        "source": "cloudtrail",
+        "details": {},
+        "category": "cloudtrail",
+        "processid": str(os.getpid()),
+        "processname": sys.argv[0],
+        "tags": [options.taskexchange],
+        "severity": "INFO",
+    }
 
-    returndict["source"] = "cloudtrail"
-    returndict["details"] = {}
-    returndict["category"] = "cloudtrail"
-    returndict["processid"] = str(os.getpid())
-    returndict["processname"] = sys.argv[0]
-    returndict["tags"] = [options.taskexchange]
-    returndict["severity"] = "INFO"
+
     if "sourceIPAddress" in aDict and "eventName" in aDict and "eventSource" in aDict:
         summary_str = "{0} performed {1} in {2}".format(
             aDict["sourceIPAddress"], aDict["eventName"], aDict["eventSource"]
@@ -115,11 +117,9 @@ def keyMapping(aDict):
                     returndict["tags"] = []
                 if type(v) == list:
                     returndict["tags"] += v
-                else:
-                    if len(v) > 0:
-                        returndict["tags"].append(v)
+                elif len(v) > 0:
+                    returndict["tags"].append(v)
 
-            # nxlog keeps the severity name in syslogseverity,everyone else should use severity or level.
             elif k in ("syslogseverity", "severity", "severityvalue", "level", "priority"):
                 returndict["severity"] = toUnicode(v).upper()
 
@@ -129,11 +129,9 @@ def keyMapping(aDict):
             elif k in ("pid", "processid"):
                 returndict["processid"] = toUnicode(v)
 
-            # nxlog sets sourcename to the processname (i.e. sshd), everyone else should call it process name or pname
             elif k in ("pname", "processname", "sourcename", "program"):
                 returndict["processname"] = toUnicode(v)
 
-            # the file, or source
             elif k in ("path", "logger", "file"):
                 returndict["eventsource"] = toUnicode(v)
 
@@ -141,24 +139,19 @@ def keyMapping(aDict):
                 returndict["category"] = toUnicode(v)
                 returndict["type"] = "cloudtrail"
 
-            # custom fields as a list/array
             elif k in ("fields", "details"):
                 if type(v) is not dict:
                     returndict["details"]["message"] = v
-                else:
-                    if len(v) > 0:
-                        for details_key, details_value in v.items():
-                            returndict["details"][details_key] = details_value
+                elif len(v) > 0:
+                    for details_key, details_value in v.items():
+                        returndict["details"][details_key] = details_value
 
-            # custom fields/details as a one off, not in an array
-            # i.e. fields.something=value or details.something=value
-            # move them to a dict for consistency in querying
             elif k.startswith("fields.") or k.startswith("details."):
                 newName = k.replace("fields.", "")
                 newName = newName.lower().replace("details.", "")
                 # add a dict to hold the details if it doesn't exist
                 if "details" not in returndict:
-                    returndict["details"] = dict()
+                    returndict["details"] = {}
                 # add field with a special case for shippers that
                 # don't send details
                 # in an array as int/floats/strings
@@ -187,7 +180,7 @@ def keyMapping(aDict):
 def esConnect():
     """open or re-open a connection to elastic search"""
     return ElasticsearchClient(
-        (list("{0}".format(s) for s in options.esservers)),
+        ["{0}".format(s) for s in options.esservers],
         bulk_amount=options.esbulksize,
         bulk_refresh_time=options.esbulktimeout,
     )
@@ -265,14 +258,14 @@ class taskConsumer(object):
 
                     s3_log_files = message_json["s3ObjectKey"]
                     for log_file in s3_log_files:
-                        logger.debug("Downloading and parsing " + log_file)
+                        logger.debug(f"Downloading and parsing {log_file}")
                         s3_obj = self.s3_client.get_object(Bucket=message_json["s3Bucket"], Key=log_file)
                         events = self.parse_s3_file(s3_obj)
                         for event in events:
                             self.on_message(event)
 
                     msg.delete()
-            except (SSLEOFError, SSLError, socket.error):
+            except (SSLError, socket.error):
                 logger.info("Received network related error...reconnecting")
                 time.sleep(5)
                 self.sqs_queue = connect_sqs(

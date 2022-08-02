@@ -73,7 +73,7 @@ class PluginSet(object):
 
         for plugin in self.ordered_enabled_plugins:
             send = False
-            message_fields = [e for e in dict2List(message)]
+            message_fields = list(dict2List(message))
             # this is to make it so we can match on all fields
             message_fields.append('*')
             if isinstance(plugin['registration'], list):

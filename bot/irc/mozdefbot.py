@@ -101,9 +101,9 @@ def run_async(func):
 
 
 def getQuote():
-    aquote = '{0} --Mos Def'.format(
-        quotes[random.randint(0, len(quotes) - 1)].strip())
-    return aquote
+    return '{0} --Mos Def'.format(
+        quotes[random.randint(0, len(quotes) - 1)].strip()
+    )
 
 
 def isIP(ip):
@@ -124,26 +124,17 @@ def ipLocation(ip):
             if 'error' in geoDict:
                 return geoDict['error']
             location = geoDict['country_name']
-            if geoDict['country_code'] in ('US'):
-                if geoDict['metro_code']:
-                    location = location + '/{0}'.format(geoDict['metro_code'])
+            if geoDict['country_code'] in ('US') and geoDict['metro_code']:
+                location = location + '/{0}'.format(geoDict['metro_code'])
     except Exception:
         location = ""
     return location
 
 
 def formatAlert(jsonDictIn):
-    # defaults
-    severity = 'INFO'
-    summary = ''
-    category = ''
-    if 'severity' in jsonDictIn:
-        severity = jsonDictIn['severity']
-    if 'summary' in jsonDictIn:
-        summary = jsonDictIn['summary']
-    if 'category' in jsonDictIn:
-        category = jsonDictIn['category']
-
+    severity = jsonDictIn['severity'] if 'severity' in jsonDictIn else 'INFO'
+    summary = jsonDictIn['summary'] if 'summary' in jsonDictIn else ''
+    category = jsonDictIn['category'] if 'category' in jsonDictIn else ''
     return colorify('{0}: {1} {2}'.format(
         severity,
         colors['blue'] + category + colors['normal'],
@@ -193,8 +184,7 @@ class mozdefBot():
 
             @self.client.handle('PRIVMSG')
             def priv_handler(client, actor, recipient, message):
-                self.root_logger.debug(
-                    'privmsggot:' + message + ' from ' + actor)
+                self.root_logger.debug(f'privmsggot:{message} from {actor}')
 
                 if "!help" in message:
                     self.client.msg(
@@ -242,6 +232,7 @@ class mozdefBot():
                 self.root_logger.debug('%r' % channel)
                 if user.nick == options.nick:
                     self.client.msg(channel, colorify(random.choice(greetz)))
+
             self.client.run()
 
         except KeyboardInterrupt:
@@ -316,15 +307,16 @@ class alertConsumer(ConsumerMixin):
             # process valid message
             # see where we send this alert
             channel = options.alertchannel
-            if 'channel' in body_dict:
-                if body_dict['channel'] in options.join.split(","):
-                    channel = body_dict['channel']
+            if 'channel' in body_dict and body_dict[
+                'channel'
+            ] in options.join.split(","):
+                channel = body_dict['channel']
 
             # see if we need to delay a bit before sending the alert, to avoid
             # flooding the channel
             if self.lastalert is not None:
                 delta = toUTC(datetime.now()) - self.lastalert
-                sys.stdout.write('new alert, delta since last is {}\n'.format(delta))
+                sys.stdout.write(f'new alert, delta since last is {delta}\n')
                 if delta.seconds < 2:
                     sys.stdout.write('throttling before writing next alert\n')
                     time.sleep(1)

@@ -30,10 +30,7 @@ def normalize(details):
             normalized["hostname"] = details[f]
             continue
         if f == "result":
-            if details[f].lower() == "success":
-                normalized["success"] = True
-            else:
-                normalized["success"] = False
+            normalized["success"] = details[f].lower() == "success"
         normalized[f] = details[f]
 
     if "user" in normalized and type(normalized["user"]) is dict:
@@ -62,10 +59,10 @@ def process_events(mozmsg, duo_events, etype, state):
 
     if etype == "administration":
         noconsume = ["timestamp", "host", "action"]
-    elif etype == "telephony":
-        noconsume = ["timestamp", "host", "context"]
     elif etype == "authentication":
         noconsume = ["timestamp", "host", "event_type"]
+    elif etype == "telephony":
+        noconsume = ["timestamp", "host", "context"]
     else:
         return
 
@@ -73,7 +70,7 @@ def process_events(mozmsg, duo_events, etype, state):
     if isinstance(duo_events, dict) and "authlogs" in duo_events:
         offset = duo_events["metadata"]["next_offset"]
         if offset is not None:
-            state["{}_offset".format(etype)] = offset
+            state[f"{etype}_offset"] = offset
         duo_events = duo_events["authlogs"]
         api_version = 2
     else:
@@ -87,9 +84,9 @@ def process_events(mozmsg, duo_events, etype, state):
             mozmsg.timestamp = toUTC(e['timestamp']).isoformat()
         # mozdef_client sets hostname to the host that the client runs on,
         # so we'll set the clientname in this cron to be the host we pulled from.
-        if 'host' in e and not None:
+        if 'host' in e:
             mozmsg.log["hostname"] = e["host"]
-        if 'hostname' in e and not None:
+        if 'hostname' in e:
             mozmsg.log["hostname"] = e["hostname"]
         for i in e:
             if i in noconsume:
@@ -108,9 +105,11 @@ def process_events(mozmsg, duo_events, etype, state):
         if "access_device" in localdetails:
             if "ip" in localdetails["access_device"]:
                 localdetails["sourceipaddress"] = localdetails["access_device"]["ip"]
-            if "hostname" in localdetails["access_device"]:
-                if localdetails["access_device"]["hostname"] is None:
-                    del localdetails["access_device"]["hostname"]
+            if (
+                "hostname" in localdetails["access_device"]
+                and localdetails["access_device"]["hostname"] is None
+            ):
+                del localdetails["access_device"]["hostname"]
         mozmsg.details = localdetails
         del(localdetails)
         mozmsg.hostname = options.URL
@@ -130,15 +129,14 @@ def process_events(mozmsg, duo_events, etype, state):
                 mozmsg.summary = (
                     e["eventtype"] + " " + e["result"] + " for " + e["username"]
                 )
+            elif 'reason' in e and e['reason'] is not None:
+                mozmsg.summary = (
+                    e["eventtype"] + " " + e["result"] + " for " + e["user"]["name"] + " due to " + e["reason"]
+                )
             else:
-                if 'reason' in e and e['reason'] is not None:
-                    mozmsg.summary = (
-                        e["eventtype"] + " " + e["result"] + " for " + e["user"]["name"] + " due to " + e["reason"]
-                    )
-                else:
-                    mozmsg.summary = (
-                        e["eventtype"] + " " + e["result"] + " for " + e["user"]["name"]
-                    )
+                mozmsg.summary = (
+                    e["eventtype"] + " " + e["result"] + " for " + e["user"]["name"]
+                )
 
         mozmsg.send()
 

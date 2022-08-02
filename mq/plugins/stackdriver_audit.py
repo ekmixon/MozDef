@@ -37,9 +37,11 @@ class message(object):
         if message["category"] not in cats:
             return (message, metadata)
 
-        newmessage = dict()
+        newmessage = {
+            "receivedtimestamp": toUTC(message["receivedtimestamp"]).isoformat()
+        }
 
-        newmessage["receivedtimestamp"] = toUTC(message["receivedtimestamp"]).isoformat()
+
         newmessage["timestamp"] = toUTC(message["details"]["timestamp"]).isoformat()
         newmessage["utctimestamp"] = toUTC(message["details"]["timestamp"]).isoformat()
         newmessage["category"] = message["category"]
@@ -54,10 +56,13 @@ class message(object):
         # Stuff fields that will be used as a summary with something, anything. The mapping function will hopefuly find something to overwrite it with.
         newmessage["details"]["username"] = "UNKNOWN"
         newmessage["details"]["resourcename"] = "UNKNOWN"
-        if "request" in newmessage["details"]["gaudit"]:
-            if "resource" in newmessage["details"]["gaudit"]["request"]:
-                if type(newmessage["details"]["gaudit"]["request"]["resource"]) is not dict:
-                    del newmessage["details"]["gaudit"]["request"]["resource"]
+        if (
+            "request" in newmessage["details"]["gaudit"]
+            and "resource" in newmessage["details"]["gaudit"]["request"]
+            and type(newmessage["details"]["gaudit"]["request"]["resource"])
+            is not dict
+        ):
+            del newmessage["details"]["gaudit"]["request"]["resource"]
 
         if message["category"] in self.eventtypes:
             for key in self.yap[newmessage["category"]]:

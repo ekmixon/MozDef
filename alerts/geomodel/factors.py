@@ -77,6 +77,8 @@ def asn_movement(db, escalate: str) -> FactorInterface:
 
         return Enhancement(
             extras={'asn_hops': asn_hops},
-            severity=escalate if len(asn_hops) > 0 else alert.severity)
+            severity=escalate if asn_hops else alert.severity,
+        )
+
 
     return factor

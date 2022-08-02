@@ -16,15 +16,25 @@ class NSMScanRandom(AlertTask):
 
     def main(self):
         search_query = SearchQuery(minutes=1)
-        search_query.add_must([
-            TermMatch('category', 'bro'),
-            TermMatch('source', 'notice'),
-            PhraseMatch('details.note', 'Scan::Random_Scan'),
-            QueryStringMatch('details.sourceipaddress: {}'.format(self._config['sourcemustmatch']))
-        ])
-        search_query.add_must_not([
-            QueryStringMatch('details.sourceipaddress: {}'.format(self._config['sourcemustnotmatch']))
-        ])
+        search_query.add_must(
+            [
+                TermMatch('category', 'bro'),
+                TermMatch('source', 'notice'),
+                PhraseMatch('details.note', 'Scan::Random_Scan'),
+                QueryStringMatch(
+                    f"details.sourceipaddress: {self._config['sourcemustmatch']}"
+                ),
+            ]
+        )
+
+        search_query.add_must_not(
+            [
+                QueryStringMatch(
+                    f"details.sourceipaddress: {self._config['sourcemustnotmatch']}"
+                )
+            ]
+        )
+
 
         self.filtersManual(search_query)
         self.searchEventsAggregated('details.sourceipaddress', samplesLimit=10)
@@ -37,10 +47,9 @@ class NSMScanRandom(AlertTask):
 
         indicators = 'unknown'
         x = aggreg['events'][0]['_source']
-        if 'details' in x:
-            if 'indicators' in x['details']:
-                indicators = x['details']['sourceipaddress']
+        if 'details' in x and 'indicators' in x['details']:
+            indicators = x['details']['sourceipaddress']
 
-        summary = 'Random scan from {}'.format(indicators)
+        summary = f'Random scan from {indicators}'
 
         return self.createAlertDict(summary, category, tags, aggreg['events'], severity)

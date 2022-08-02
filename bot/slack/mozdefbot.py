@@ -73,15 +73,14 @@ class AlertConsumer(ConsumerMixin):
             # process valid message
             # see where we send this alert
             channel = options.default_alert_channel
-            if 'channel' in body_dict:
-                if body_dict['channel'] in options.channels:
-                    channel = body_dict['channel']
+            if 'channel' in body_dict and body_dict['channel'] in options.channels:
+                channel = body_dict['channel']
 
             # see if we need to delay a bit before sending the alert, to avoid
             # flooding the channel
             if self.lastalert is not None:
                 delta = toUTC(datetime.now()) - self.lastalert
-                logger.info('new alert, delta since last is {}\n'.format(delta))
+                logger.info(f'new alert, delta since last is {delta}\n')
                 if delta.seconds < 2:
                     logger.info('throttling before writing next alert\n')
                     time.sleep(1)

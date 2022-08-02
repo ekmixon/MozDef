@@ -23,7 +23,7 @@ def isIPv6(ip):
 def addError(message, error):
     '''add an error note to a message'''
     if 'errors' not in message:
-        message['errors'] = list()
+        message['errors'] = []
     if isinstance(message['errors'], list):
         message['errors'].append(error)
 

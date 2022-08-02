@@ -7,7 +7,7 @@ class BulkQueue():
     def __init__(self, es_client, threshold=10, flush_time=30):
         self.es_client = es_client
         self.threshold = threshold
-        self.list = list()
+        self.list = []
         self.flush_time = flush_time
         self.flush_thread = Thread(target=self.flush_periodically)
         self.flush_thread.daemon = True
@@ -24,7 +24,7 @@ class BulkQueue():
         self.running = False
 
     def flush_periodically(self):
-        while True and not self.stopping_thread:
+        while not self.stopping_thread:
             time.sleep(self.flush_time)
             self.flush()
 
@@ -55,6 +55,6 @@ class BulkQueue():
         self.lock.acquire()
         try:
             self.es_client.save_documents(self.list)
-            self.list = list()
+            self.list = []
         finally:
             self.lock.release()

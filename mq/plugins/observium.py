@@ -18,21 +18,22 @@ class message(object):
         self.regex = re.compile(r'(?P<alert_type>\S+): \[(?P<source_host>\S+)\] \[(?P<entity_type>\S+)\] \[(?P<entity>.*)\] (?P<alert_message>.*)')
 
     def onMessage(self, message, metadata):
-        if 'details' in message:
-            if 'program' in message['details']:
-                if 'Observium' == message['details']['program']:
-                    msg_unparsed = message['summary']
-                    search = re.search(self.regex, msg_unparsed)
-                    if search:
-                        message['hostname'] = search.group('source_host')
-                        message['details']['alert_type'] = search.group('alert_type')
-                        message['details']['entity_type'] = search.group('entity_type')
-                        message['details']['entity'] = search.group('entity')
-                        message['details']['alert_message'] = search.group('alert_message')
-                        # tag the message
-                        if 'tags' in message and isinstance(message['tags'], list):
-                            message['tags'].append('alert')
-                        else:
-                            message['tags'] = ['alert']
+        if (
+            'details' in message
+            and 'program' in message['details']
+            and message['details']['program'] == 'Observium'
+        ):
+            msg_unparsed = message['summary']
+            if search := re.search(self.regex, msg_unparsed):
+                message['hostname'] = search['source_host']
+                message['details']['alert_type'] = search['alert_type']
+                message['details']['entity_type'] = search['entity_type']
+                message['details']['entity'] = search['entity']
+                message['details']['alert_message'] = search['alert_message']
+                # tag the message
+                if 'tags' in message and isinstance(message['tags'], list):
+                    message['tags'].append('alert')
+                else:
+                    message['tags'] = ['alert']
 
         return (message, metadata)

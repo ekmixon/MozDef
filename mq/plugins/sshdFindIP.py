@@ -8,15 +8,11 @@ import netaddr
 
 def isIPv4(ip):
     try:
-        # netaddr on it's own considers 1 and 0 to be valid_ipv4
-        # so a little sanity check prior to netaddr.
-        # Use IPNetwork instead of valid_ipv4 to allow CIDR
-        if '.' in ip and len(ip.split('.'))==4:
-            # some ips are quoted
-            netaddr.IPNetwork(ip)
-            return True
-        else:
+        if '.' not in ip or len(ip.split('.')) != 4:
             return False
+        # some ips are quoted
+        netaddr.IPNetwork(ip)
+        return True
     except:
         return False
 
@@ -56,7 +52,7 @@ class message(object):
 
             if len(foundIPv4):
                 if not detailsExists:
-                    message['details'] = dict()
+                    message['details'] = {}
                 message['details']['sourceipaddress'] = foundIPv4
 
         return (message, metadata)
